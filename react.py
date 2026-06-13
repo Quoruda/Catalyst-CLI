@@ -29,11 +29,12 @@ Final Answer: The current user is audrick.
 
 Begin!"""
 
-    def run(self, query: str, step_callback: Optional[Callable[[str, str, str], None]] = None) -> str:
-        messages = [
-            {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": query}
-        ]
+    def run(self, query: str, history: List[Dict[str, str]], step_callback: Optional[Callable[[str, str, str], None]] = None) -> str:
+        if not history:
+            history.append({"role": "system", "content": self.system_prompt})
+            
+        history.append({"role": "user", "content": query})
+        messages = list(history)
         
         max_steps = 10
         for _ in range(max_steps):
@@ -70,8 +71,11 @@ Begin!"""
                     messages.append({"role": "user", "content": f"Observation: {error_msg}"})
             else:
                 final_match = re.search(r"Final Answer:\s*([\s\S]*)", response)
-                if final_match:
-                    return final_match.group(1).strip()
-                return response
+                final_answer = final_match.group(1).strip() if final_match else response
                 
-        return "Failed to complete task within step limit."
+                history.append({"role": "assistant", "content": f"Final Answer: {final_answer}"})
+                return final_answer
+                
+        error_res = "Failed to complete task within step limit."
+        history.append({"role": "assistant", "content": error_res})
+        return error_res

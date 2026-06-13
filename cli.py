@@ -21,6 +21,8 @@ def main():
         border_style="cyan"
     ))
     
+    history = []
+
     def step_callback(step_type: str, name: str, detail: str):
         if step_type == "thought":
             if name:
@@ -42,9 +44,14 @@ def main():
                 console.print("[yellow]Exiting Catalyst.[/yellow]")
                 break
                 
+            if user_input.lower() == "/clear":
+                history.clear()
+                console.print("[yellow]History cleared.[/yellow]")
+                continue
+                
             console.print()
             with console.status("[bold blue]Thinking...[/bold blue]", spinner="dots"):
-                response = react_agent.run(user_input, step_callback=step_callback)
+                response = react_agent.run(user_input, history, step_callback=step_callback)
                 
             console.print(Panel(Markdown(response), title="[bold green]Final Answer[/bold green]", border_style="green"))
             console.print()
