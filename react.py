@@ -1,33 +1,12 @@
-import re
+import json
 from typing import Dict, Any, List, Optional, Callable
 from agent import CatalystAgent
-from tools import available_tools, tools_description
+from tools import available_tools, tools_schema
 
 class ReActAgent:
     def __init__(self, agent: CatalystAgent):
         self.agent = agent
-        self.system_prompt = f"""You are Catalyst, an agent that operates in a loop of Thought, Action, and Observation.
-You have access to the following tools:
-
-{tools_description}
-
-Format for calling a tool:
-Action: tool_name[arguments]
-
-After the tool runs, you will receive:
-Observation: result of the tool
-
-When you have the final answer to the user, format it as:
-Final Answer: your detailed response
-
-Example session:
-Thought: I need to check who is the current user.
-Action: execute_bash[whoami]
-Observation: STDOUT: audrick
-Thought: I know the user is audrick.
-Final Answer: The current user is audrick.
-
-Begin!"""
+        self.system_prompt = "You are Catalyst, an agent that operates with tools. Use your tools to answer user queries."
 
     def run(self, query: str, history: List[Dict[str, str]], step_callback: Optional[Callable[[str, str, str], None]] = None) -> str:
         if not history:
@@ -38,42 +17,61 @@ Begin!"""
         
         max_steps = 10
         for _ in range(max_steps):
-            response = self.agent.generate(messages)
+            if step_callback:
+                step_callback("thought", "start", "")
+            response = self.agent.generate(messages, tools=tools_schema)
             
-            action_match = re.search(r"Action:\s*(\w+)\[([\s\S]*?)\]", response)
-            
-            if action_match:
-                tool_name = action_match.group(1)
-                tool_args = action_match.group(2).strip()
+            if step_callback:
+                step_callback("thought", "done", response.reasoning or "")
                 
-                thought = ""
-                thought_match = re.search(r"Thought:\s*(.*?)(?=Action:|$)", response, re.DOTALL)
-                if thought_match:
-                    thought = thought_match.group(1).strip()
-                
-                if tool_name in available_tools:
-                    if step_callback:
-                        step_callback("thought", thought, "")
-                        step_callback("action", tool_name, tool_args)
-                        
-                    observation = available_tools[tool_name](tool_args)
+            if response.tool_calls:
+                assistant_msg = {
+                    "role": "assistant",
+                    "content": response.content,
+                    "tool_calls": response.tool_calls
+                }
+                messages.append(assistant_msg)
                     
+                for tc in response.tool_calls:
+                    tool_name = tc["function"]["name"]
+                    tool_args_raw = tc["function"]["arguments"]
+                    
+                    if isinstance(tool_args_raw, str):
+                        try:
+                            tool_args = json.loads(tool_args_raw)
+                        except Exception:
+                            tool_args = {"command": tool_args_raw}
+                    else:
+                        tool_args = tool_args_raw
+                        
+                    args_str = json.dumps(tool_args)
+                    if step_callback:
+                        step_callback("action", tool_name, args_str)
+                        
+                    if tool_name in available_tools:
+                        try:
+                            if isinstance(tool_args, dict):
+                                observation = available_tools[tool_name](**tool_args)
+                            else:
+                                observation = available_tools[tool_name](tool_args)
+                        except Exception as e:
+                            observation = f"Error executing tool: {str(e)}"
+                    else:
+                        observation = f"Tool '{tool_name}' not found."
+                        
                     if step_callback:
                         step_callback("observation", tool_name, observation)
                         
-                    messages.append({"role": "assistant", "content": response})
-                    messages.append({"role": "user", "content": f"Observation: {observation}"})
-                else:
-                    error_msg = f"Tool '{tool_name}' not found."
-                    if step_callback:
-                        step_callback("error", tool_name, error_msg)
-                    messages.append({"role": "assistant", "content": response})
-                    messages.append({"role": "user", "content": f"Observation: {error_msg}"})
+                    tool_response_msg = {
+                        "role": "tool",
+                        "tool_call_id": tc["id"],
+                        "name": tool_name,
+                        "content": observation
+                    }
+                    messages.append(tool_response_msg)
             else:
-                final_match = re.search(r"Final Answer:\s*([\s\S]*)", response)
-                final_answer = final_match.group(1).strip() if final_match else response
-                
-                history.append({"role": "assistant", "content": f"Final Answer: {final_answer}"})
+                final_answer = response.content or ""
+                history.append({"role": "assistant", "content": final_answer})
                 return final_answer
                 
         error_res = "Failed to complete task within step limit."

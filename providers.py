@@ -1,97 +1,92 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional
-from openai import OpenAI
-import requests
+import json
+import litellm
+from litellm import completion
 from config import AgentConfig
+
+litellm.telemetry = False
+
+class LLMResponse:
+    def __init__(self, content: Optional[str] = None, tool_calls: Optional[List[Dict[str, Any]]] = None, reasoning: Optional[str] = None):
+        self.content = content
+        self.tool_calls = tool_calls or []
+        self.reasoning = reasoning
 
 class LLMProvider(ABC):
     @abstractmethod
     def generate(
         self, 
         messages: List[Dict[str, str]], 
+        tools: Optional[List[Dict[str, Any]]] = None,
         response_format: Optional[Dict[str, Any]] = None
-    ) -> str:
+    ) -> LLMResponse:
         pass
 
-class OpenAICompatibleProvider(LLMProvider):
+class LiteLLMProvider(LLMProvider):
     def __init__(self, config: AgentConfig):
-        self.model = config.model
         self.temperature = config.temperature
-        self.client = OpenAI(
-            base_url=config.api_base,
-            api_key=config.api_key or "ollama"
-        )
+        self.api_base = config.api_base
+        self.api_key = config.api_key
+        
+        provider = config.provider.lower()
+        if provider == "gemini":
+            if not config.model.startswith("gemini/"):
+                self.model = f"gemini/{config.model}"
+            else:
+                self.model = config.model
+        elif provider == "ollama":
+            if not config.model.startswith("ollama/"):
+                self.model = f"ollama/{config.model}"
+            else:
+                self.model = config.model
+        else:
+            self.model = config.model
 
     def generate(
         self, 
         messages: List[Dict[str, str]], 
+        tools: Optional[List[Dict[str, Any]]] = None,
         response_format: Optional[Dict[str, Any]] = None
-    ) -> str:
+    ) -> LLMResponse:
         kwargs = {
             "model": self.model,
             "messages": messages,
             "temperature": self.temperature,
         }
+        if self.api_base:
+            kwargs["api_base"] = self.api_base
+        if self.api_key:
+            kwargs["api_key"] = self.api_key
+            
         if response_format:
             kwargs["response_format"] = response_format
-        response = self.client.chat.completions.create(**kwargs)
-        return response.choices[0].message.content or ""
-
-class GeminiProvider(LLMProvider):
-    def __init__(self, config: AgentConfig):
-        self.model = config.model
-        self.temperature = config.temperature
-        self.api_key = config.api_key
-        self.base_url = "https://generativelanguage.googleapis.com/v1beta"
-
-    def generate(
-        self, 
-        messages: List[Dict[str, str]], 
-        response_format: Optional[Dict[str, Any]] = None
-    ) -> str:
-        if not self.api_key:
-            raise ValueError("Gemini API key is required.")
             
-        contents = []
-        system_instruction = None
+        if tools:
+            kwargs["tools"] = [{"type": "function", "function": t} for t in tools]
+            
+        response = completion(**kwargs)
+        message = response.choices[0].message
         
-        for message in messages:
-            role = message["role"]
-            content = message["content"]
-            
-            if role == "system":
-                system_instruction = {"parts": [{"text": content}]}
-            else:
-                gemini_role = "user" if role == "user" else "model"
-                contents.append({
-                    "role": gemini_role,
-                    "parts": [{"text": content}]
+        tool_calls = []
+        if getattr(message, "tool_calls", None):
+            for tc in message.tool_calls:
+                args = tc.function.arguments
+                if not isinstance(args, str):
+                    args = json.dumps(args)
+                tool_calls.append({
+                    "id": tc.id,
+                    "type": "function",
+                    "function": {
+                        "name": tc.function.name,
+                        "arguments": args
+                    }
                 })
                 
-        url = f"{self.base_url}/models/{self.model}:generateContent?key={self.api_key}"
-        
-        generation_config = {
-            "temperature": self.temperature
-        }
-        
-        if response_format and response_format.get("type") == "json_object":
-            generation_config["responseMimeType"] = "application/json"
-            if "schema" in response_format:
-                generation_config["responseSchema"] = response_format["schema"]
-                
-        payload = {
-            "contents": contents,
-            "generationConfig": generation_config
-        }
-        
-        if system_instruction:
-            payload["systemInstruction"] = system_instruction
+        reasoning = getattr(message, "reasoning_content", None)
+        if not reasoning and isinstance(message, dict):
+            reasoning = message.get("reasoning_content")
+        if reasoning and not isinstance(reasoning, str):
+            reasoning = str(reasoning)
             
-        response = requests.post(url, json=payload)
-        response.raise_for_status()
-        
-        data = response.json()
-        try:
-            return data["candidates"][0]["content"]["parts"][0]["text"]
-        except (KeyError, IndexError) as e:
-            raise RuntimeError(f"Unexpected response structure from Gemini API: {data}") from e
+        return LLMResponse(content=message.content, tool_calls=tool_calls, reasoning=reasoning)

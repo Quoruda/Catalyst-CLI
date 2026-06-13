@@ -2,7 +2,7 @@ import os
 from typing import Dict, Any, List, Optional
 from dotenv import load_dotenv
 from config import AgentConfig
-from providers import LLMProvider, OpenAICompatibleProvider, GeminiProvider
+from providers import LLMProvider, LiteLLMProvider, LLMResponse
 
 class CatalystAgent:
     def __init__(self, env_path: Optional[str] = None):
@@ -22,19 +22,15 @@ class CatalystAgent:
         self.provider = self._init_provider()
 
     def _init_provider(self) -> LLMProvider:
-        if self.config.provider in ("ollama", "openai", "open_webui", "open-webui"):
-            return OpenAICompatibleProvider(self.config)
-        elif self.config.provider == "gemini":
-            return GeminiProvider(self.config)
-        else:
-            raise ValueError(f"Unsupported provider: {self.config.provider}")
+        return LiteLLMProvider(self.config)
 
     def generate(
         self, 
         messages: List[Dict[str, str]], 
+        tools: Optional[List[Dict[str, Any]]] = None,
         response_format: Optional[Dict[str, Any]] = None
-    ) -> str:
+    ) -> LLMResponse:
         try:
-            return self.provider.generate(messages, response_format)
+            return self.provider.generate(messages, tools, response_format)
         except Exception as e:
             raise RuntimeError(f"LLM generation failed: {str(e)}") from e

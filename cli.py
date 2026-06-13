@@ -4,7 +4,18 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
 from prompt_toolkit import PromptSession
-from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.completion import Completer, Completion
+
+class SlashCommandCompleter(Completer):
+    def __init__(self, commands):
+        self.commands = commands
+        
+    def get_completions(self, document, complete_event):
+        text = document.text_before_cursor
+        if text.startswith("/") and " " not in text:
+            for cmd in self.commands:
+                if cmd.startswith(text):
+                    yield Completion(cmd, start_position=-len(text))
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.styles import Style
 from agent import CatalystAgent
@@ -43,31 +54,38 @@ def main():
         "toolbar-value": "fg:#bbbbbb",
     })
     
-    completer = WordCompleter(["/exit", "/clear", "/help", "/history"], ignore_case=True)
+    completer = SlashCommandCompleter(["/exit", "/clear", "/help", "/history"])
     session = PromptSession(
         history=InMemoryHistory(),
         completer=completer,
         complete_while_typing=True
     )
     
+    active_status = None
+    
     def step_callback(step_type: str, name: str, detail: str):
+        nonlocal active_status
         if step_type == "thought":
-            if name:
-                console.print(f"🤔 [yellow]Thought:[/] {name}")
+            if name == "start":
+                if active_status:
+                    active_status.stop()
+                active_status = console.status("[bold green]│ Thinking...[/]")
+                active_status.start()
+            elif name == "done":
+                if active_status:
+                    active_status.stop()
+                    active_status = None
+                console.print("│ [green]Thinking[/]")
         elif step_type == "action":
-            console.print(f"⚙️ [magenta]Action:[/] [bold]{name}[/] [dim]({detail})[/]")
-        elif step_type == "observation":
-            lines = detail.splitlines()
-            if len(lines) > 12:
-                show_lines = lines[:4] + [f"  [dim]... ({len(lines) - 8} lines hidden) ...[/dim]"] + lines[-4:]
-                display_text = "\n".join(show_lines)
-            else:
-                display_text = detail
-            
-            indented = "\n".join(f"  │ {line}" for line in display_text.splitlines())
-            console.print(f"  [cyan]Observation:[/]\n{indented}")
+            if active_status:
+                active_status.stop()
+                active_status = None
+            console.print(f"│ [magenta]Action:[/] [bold]{name}[/] [dim]({detail})[/]")
         elif step_type == "error":
-            console.print(f"❌ [bold red]Error:[/] {detail}")
+            if active_status:
+                active_status.stop()
+                active_status = None
+            console.print(f"│ [bold red]Error:[/] {detail}")
 
     while True:
         try:
@@ -110,12 +128,19 @@ def main():
                         console.print(f"[{color}][bold]{role}:[/bold] {msg['content']}[/{color}]")
                 continue
                 
-            console.print()
-            with console.status("[bold blue]Thinking...[/bold blue]", spinner="dots"):
-                response = react_agent.run(user_input, history, step_callback=step_callback)
+            if user_input.startswith("/"):
+                console.print(f"[red]Unknown command: {user_input}. Type /help for available commands.[/red]")
+                continue
                 
-            console.print(Panel(Markdown(response), title="[bold green]Final Answer[/bold green]", border_style="green"))
             console.print()
+            try:
+                response = react_agent.run(user_input, history, step_callback=step_callback)
+                console.print(Panel(Markdown(response), title="[bold green]Final Answer[/bold green]", border_style="green"))
+                console.print()
+            finally:
+                if active_status:
+                    active_status.stop()
+                    active_status = None
             
         except KeyboardInterrupt:
             continue

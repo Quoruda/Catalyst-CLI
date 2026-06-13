@@ -6,3 +6,4 @@ python-dotenv>=1.0.1
 openai>=1.0.0
 pymupdf4llm>=0.0.1
 prompt-toolkit>=3.0.36
+litellm>=1.0.0
