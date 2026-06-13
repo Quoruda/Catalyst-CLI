@@ -48,3 +48,22 @@ def view_image(filepath: str, prompt: str = "Describe this image in detail.") ->
         return res.choices[0].message.content or ""
     except Exception as e:
         return f"Error analyzing image: {str(e)}"
+
+schema = {
+    "name": "view_image",
+    "description": "Analyzes a local image file (PNG, JPG, WEBP, GIF) using the multimodal LLM and returns the description or analysis.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "filepath": {
+                "type": "string",
+                "description": "The path to the local image file."
+            },
+            "prompt": {
+                "type": "string",
+                "description": "Optional prompt to guide the model's analysis (e.g. 'Read the text in this image' or 'What color is the car?')."
+            }
+        },
+        "required": ["filepath"]
+    }
+}

@@ -1,62 +1,43 @@
-from tools.bash import execute_bash
-from tools.pdf import read_pdf
-from tools.vision import view_image
+import os
+import sys
+import importlib.util
 
-available_tools = {
-    "execute_bash": execute_bash,
-    "read_pdf": read_pdf,
-    "view_image": view_image
-}
+available_tools = {}
+tools_schema = []
 
-tools_schema = [
-    {
-        "name": "execute_bash",
-        "description": "Executes a bash command on the local machine and returns the stdout, stderr, and exit code.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "command": {
-                    "type": "string",
-                    "description": "The shell command to execute."
-                }
-            },
-            "required": ["command"]
-        }
-    },
-    {
-        "name": "read_pdf",
-        "description": "Reads a local PDF file and returns its content in markdown format.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "filepath": {
-                    "type": "string",
-                    "description": "The path to the local PDF file."
-                },
-                "page_range": {
-                    "type": "string",
-                    "description": "Optional page number or range (e.g. '2', '1-3', '2,4')."
-                }
-            },
-            "required": ["filepath"]
-        }
-    },
-    {
-        "name": "view_image",
-        "description": "Analyzes a local image file (PNG, JPG, WEBP, GIF) using the multimodal LLM and returns the description or analysis.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "filepath": {
-                    "type": "string",
-                    "description": "The path to the local image file."
-                },
-                "prompt": {
-                    "type": "string",
-                    "description": "Optional prompt to guide the model's analysis (e.g. 'Read the text in this image' or 'What color is the car?')."
-                }
-            },
-            "required": ["filepath"]
-        }
-    }
-]
+def load_tools_from_dir(directory: str, package_name: str = ""):
+    if not os.path.exists(directory):
+        return
+        
+    for filename in os.listdir(directory):
+        if filename.endswith(".py") and filename != "__init__.py":
+            module_name = filename[:-3]
+            full_module_name = f"{package_name}.{module_name}" if package_name else module_name
+            filepath = os.path.join(directory, filename)
+            
+            spec = importlib.util.spec_from_file_location(full_module_name, filepath)
+            if spec and spec.loader:
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[full_module_name] = module
+                try:
+                    spec.loader.exec_module(module)
+                    if hasattr(module, "schema"):
+                        schema = getattr(module, "schema")
+                        name = schema.get("name")
+                        func = getattr(module, name, None)
+                        if func:
+                            if name in available_tools:
+                                raise ValueError(f"Duplicate tool registration detected: '{name}' in '{filepath}'")
+                            available_tools[name] = func
+                            tools_schema.append(schema)
+                except Exception as e:
+                    if isinstance(e, ValueError):
+                        raise e
+
+tools_dir = os.path.dirname(__file__)
+load_tools_from_dir(tools_dir, "tools")
+
+custom_dir = os.path.join(os.path.dirname(tools_dir), "custom_tools")
+if not os.path.exists(custom_dir):
+    os.makedirs(custom_dir)
+load_tools_from_dir(custom_dir, "custom_tools")

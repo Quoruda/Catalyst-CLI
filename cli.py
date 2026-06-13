@@ -54,7 +54,7 @@ def main():
         "toolbar-value": "fg:#bbbbbb",
     })
     
-    completer = SlashCommandCompleter(["/exit", "/clear", "/help", "/history"])
+    completer = SlashCommandCompleter(["/exit", "/clear", "/help", "/history", "/tools"])
     session = PromptSession(
         history=InMemoryHistory(),
         completer=completer,
@@ -110,12 +110,24 @@ def main():
                 console.print(Panel(
                     "[bold cyan]Available Commands:[/bold cyan]\n"
                     "[bold]/help[/bold] - Show this help menu\n"
+                    "[bold]/tools[/bold] - Show registered tools and descriptions\n"
                     "[bold]/clear[/bold] - Clear conversation history\n"
                     "[bold]/history[/bold] - View current raw conversation history\n"
                     "[bold]/exit[/bold] - Exit Catalyst",
                     title="Help",
                     border_style="cyan"
                 ))
+                continue
+                
+            if user_input.lower() == "/tools":
+                from tools import tools_schema
+                if not tools_schema:
+                    console.print("[yellow]No tools registered.[/yellow]")
+                else:
+                    console.print("[bold cyan]Registered Tools:[/bold cyan]")
+                    for schema in tools_schema:
+                        desc = schema.get("description", "No description provided.")
+                        console.print(f"[bold green]{schema['name']}[/bold green] - {desc}")
                 continue
                 
             if user_input.lower() == "/history":
