@@ -138,6 +138,10 @@ def load_agents():
                     if not name:
                         name = os.path.splitext(filename)[0]
                         
+                    import re
+                    if not re.match(r"^[a-zA-Z0-9_]+$", name):
+                        raise ValueError(f"Agent name '{name}' in '{filepath}' contains invalid characters. Only alphanumeric characters and underscores are allowed.")
+                        
                     if name in available_agents:
                         raise ValueError(f"Duplicate agent registration detected: '{name}' in '{filepath}'")
                         
