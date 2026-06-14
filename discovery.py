@@ -196,7 +196,7 @@ def generate_delegation_tools():
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "The specific instruction or query for the agent."
+                        "description": "A highly detailed, self-contained instruction for the delegated agent. Specify exactly what information you need, include all relevant context, URLs, or previous findings so the agent does not lack context. Do not be lazy or vague."
                     }
                 },
                 "required": ["query"]
