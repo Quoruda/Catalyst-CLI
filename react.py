@@ -1,12 +1,24 @@
 import json
 from typing import Dict, Any, List, Optional, Callable
 from agent import CatalystAgent
-from tools import available_tools, tools_schema
 
 class ReActAgent:
-    def __init__(self, agent: CatalystAgent):
+    def __init__(self, agent: CatalystAgent, agent_name: str = "catalyst"):
         self.agent = agent
-        self.system_prompt = "You are Catalyst, an agent that operates with tools. Use your tools to answer user queries."
+        self.agent_name = agent_name
+        
+        from discovery import available_agents
+        self.config = available_agents.get(agent_name)
+        if not self.config:
+            raise ValueError(f"Agent '{agent_name}' not found in registered agents.")
+            
+        self.system_prompt = self.config["system_prompt"]
+        
+        from tools import tools_schema
+        allowed_tools = self.config.get("tools", [])
+        self.agent_tools_schema = [
+            schema for schema in tools_schema if schema["name"] in allowed_tools
+        ]
 
     def run(self, query: str, history: List[Dict[str, str]], step_callback: Optional[Callable[[str, str, str], None]] = None) -> str:
         if not history:
@@ -15,11 +27,12 @@ class ReActAgent:
         history.append({"role": "user", "content": query})
         messages = list(history)
         
+        from tools import available_tools
         max_steps = 10
         for _ in range(max_steps):
             if step_callback:
                 step_callback("thought", "start", "")
-            response = self.agent.generate(messages, tools=tools_schema)
+            response = self.agent.generate(messages, tools=self.agent_tools_schema)
             
             if step_callback:
                 step_callback("thought", "done", response.reasoning or "")

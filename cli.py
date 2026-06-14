@@ -23,9 +23,17 @@ from react import ReActAgent
 
 def main():
     console = Console()
+    
+    from discovery import available_agents
+    if not available_agents:
+        console.print(Panel("[bold red]Error: No agents registered. Please define at least one agent in the 'agents/' directory.[/bold red]", title="Error"))
+        sys.exit(1)
+        
+    default_agent_name = "catalyst" if "catalyst" in available_agents else list(available_agents.keys())[0]
+    
     try:
         agent = CatalystAgent()
-        react_agent = ReActAgent(agent)
+        react_agent = ReActAgent(agent, agent_name=default_agent_name)
     except Exception as e:
         console.print(Panel(f"[red]Error initializing agent: {str(e)}[/red]", title="Error"))
         sys.exit(1)
@@ -54,7 +62,7 @@ def main():
         "toolbar-value": "fg:#bbbbbb",
     })
     
-    completer = SlashCommandCompleter(["/exit", "/clear", "/help", "/history", "/tools"])
+    completer = SlashCommandCompleter(["/exit", "/clear", "/help", "/history", "/tools", "/agents"])
     session = PromptSession(
         history=InMemoryHistory(),
         completer=completer,
@@ -110,6 +118,7 @@ def main():
                 console.print(Panel(
                     "[bold cyan]Available Commands:[/bold cyan]\n"
                     "[bold]/help[/bold] - Show this help menu\n"
+                    "[bold]/agents[/bold] - Show registered agents and configurations\n"
                     "[bold]/tools[/bold] - Show registered tools and descriptions\n"
                     "[bold]/clear[/bold] - Clear conversation history\n"
                     "[bold]/history[/bold] - View current raw conversation history\n"
@@ -117,6 +126,22 @@ def main():
                     title="Help",
                     border_style="cyan"
                 ))
+                continue
+                
+            if user_input.lower() == "/agents":
+                from discovery import available_agents
+                if not available_agents:
+                    console.print("[yellow]No agents registered.[/yellow]")
+                else:
+                    console.print("[bold cyan]Registered Agents:[/bold cyan]")
+                    for name, config in available_agents.items():
+                        engine = config.get("engine", "Unknown")
+                        tools_list = ", ".join(config.get("tools", []))
+                        console.print(f"[bold green]{name}[/bold green] (Engine: {engine})")
+                        if tools_list:
+                            console.print(f"  [dim]Tools:[/] {tools_list}")
+                        else:
+                            console.print("  [dim]Tools:[/] None")
                 continue
                 
             if user_input.lower() == "/tools":
