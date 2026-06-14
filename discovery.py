@@ -199,6 +199,30 @@ def load_agents():
                 except Exception as e:
                     if isinstance(e, ValueError):
                         raise e
+            elif filename.endswith(".py") and filename != "__init__.py":
+                module_name = filename[:-3]
+                full_module_name = f"{package_name}.{module_name}"
+                spec = importlib.util.spec_from_file_location(full_module_name, filepath)
+                if spec and spec.loader:
+                    module = importlib.util.module_from_spec(spec)
+                    sys.modules[full_module_name] = module
+                    try:
+                        spec.loader.exec_module(module)
+                        from agent import BaseAgent
+                        for attr_name in dir(module):
+                            attr = getattr(module, attr_name)
+                            if isinstance(attr, type) and issubclass(attr, BaseAgent) and attr is not BaseAgent:
+                                agent_obj = attr()
+                                import re
+                                if not re.match(r"^[a-zA-Z0-9_]+$", agent_obj.name):
+                                    raise ValueError(f"Agent name '{agent_obj.name}' in '{filepath}' contains invalid characters. Only alphanumeric characters and underscores are allowed.")
+                                if agent_obj.name in available_agents:
+                                    raise ValueError(f"Duplicate agent registration detected: '{agent_obj.name}' in '{filepath}'")
+                                available_agents[agent_obj.name] = agent_obj
+                                break
+                    except Exception as e:
+                        if isinstance(e, ValueError):
+                            raise e
 
 def generate_delegation_tools():
     for agent_name, agent_obj in list(available_agents.items()):
@@ -208,17 +232,15 @@ def generate_delegation_tools():
             
         def make_delegate_func(name=agent_name):
             def delegate_func(query: str) -> str:
-                from agent import CatalystAgent
-                from react import ReActAgent
-                
                 level_token = nesting_level.set(nesting_level.get() + 1)
+                agent_token = active_agent_name.set(name)
                 try:
-                    agent_wrapper = CatalystAgent()
-                    target_agent = ReActAgent(agent_wrapper, agent_name=name)
+                    target_agent = available_agents[name]
                     parent_callback = current_step_callback.get()
                     response = target_agent.run(query, history=[], step_callback=parent_callback)
                     return response
                 finally:
+                    active_agent_name.reset(agent_token)
                     nesting_level.reset(level_token)
             return delegate_func
             
