@@ -63,6 +63,12 @@ def save_user_history(history: list):
         pass
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Catalyst CLI")
+    parser.add_argument("-m", "--message", type=str, help="Quickly send a message and get a response without entering interactive mode.")
+    parser.add_argument("-a", "--agent", type=str, help="Specify the agent to use.")
+    parsed_args = parser.parse_args()
+
     console = Console()
     
     from discovery import available_agents
@@ -72,12 +78,16 @@ def main():
         
     user_config = load_user_config()
     saved_agent = user_config.get("default_agent")
-    if saved_agent and saved_agent in available_agents:
-        default_agent_name = saved_agent
+    if parsed_args.agent:
+        if parsed_args.agent not in available_agents:
+            console.print(Panel(f"[bold red]Error: Agent '{parsed_args.agent}' not found. Registered agents: {', '.join(available_agents.keys())}[/bold red]", title="Error"))
+            sys.exit(1)
+        current_agent_name = parsed_args.agent
+    elif saved_agent and saved_agent in available_agents:
+        current_agent_name = saved_agent
     else:
-        default_agent_name = "catalyst" if "catalyst" in available_agents else list(available_agents.keys())[0]
+        current_agent_name = "catalyst" if "catalyst" in available_agents else list(available_agents.keys())[0]
     
-    current_agent_name = default_agent_name
     try:
         agent = CatalystAgent()
         react_agent = ReActAgent(agent, agent_name=current_agent_name)
@@ -85,10 +95,11 @@ def main():
         console.print(Panel(f"[red]Error initializing agent: {str(e)}[/red]", title="Error"))
         sys.exit(1)
         
-    console.print(Panel(
-        "[bold cyan]CATALYST supervisor (ReAct Mode)[/bold cyan]",
-        border_style="cyan"
-    ))
+    if not parsed_args.message:
+        console.print(Panel(
+            "[bold cyan]CATALYST supervisor (ReAct Mode)[/bold cyan]",
+            border_style="cyan"
+        ))
     
     history = []
     
@@ -155,6 +166,19 @@ def main():
                 active_status.stop()
                 active_status = None
             console.print(f"{indent}│ \\[{name}] [cyan]Finished[/]")
+
+    if parsed_args.message:
+        console.print()
+        try:
+            response = react_agent.run(parsed_args.message, [], step_callback=step_callback)
+            console.print(Panel(Markdown(response), title="[bold green]Final Answer[/bold green]", border_style="green"))
+            console.print()
+        except Exception as e:
+            console.print(Panel(f"[bold red]Error: {str(e)}[/bold red]", border_style="red"))
+        finally:
+            if active_status:
+                active_status.stop()
+        sys.exit(0)
 
     is_generating = False
     while True:
