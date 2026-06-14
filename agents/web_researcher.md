@@ -1,6 +1,7 @@
 ---
 name: web_researcher
 description: Specialized agent for searching the web and reading webpages to gather up-to-date facts.
+delegation_instruction: "State the research objective or the question to answer clearly. Pass along any raw URLs provided by the user so the agent can read them directly."
 engine: ReAct
 tools:
   - web_search

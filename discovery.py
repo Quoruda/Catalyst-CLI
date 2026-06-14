@@ -4,13 +4,14 @@ import importlib.util
 import contextvars
 
 class Agent:
-    def __init__(self, name: str, description: str, engine: str, tools: list[str], system_prompt: str, delegates: list[str] = None):
+    def __init__(self, name: str, description: str, engine: str, tools: list[str], system_prompt: str, delegates: list[str] = None, delegation_instruction: str = ""):
         self.name = name
         self.description = description
         self.engine = engine
         self.tools = tools
         self.system_prompt = system_prompt
         self.delegates = delegates or []
+        self.delegation_instruction = delegation_instruction
 
     def __repr__(self):
         return f"<Agent name={self.name} engine={self.engine}>"
@@ -157,7 +158,8 @@ def load_agents():
                         engine=agent_config.get("engine", "ReAct"),
                         tools=agent_config.get("tools", []),
                         system_prompt=agent_config.get("system_prompt", ""),
-                        delegates=delegates_list
+                        delegates=delegates_list,
+                        delegation_instruction=agent_config.get("delegation_instruction", "")
                     )
                     available_agents[name] = agent_obj
                 except Exception as e:
@@ -188,9 +190,13 @@ def generate_delegation_tools():
             
         available_tools[tool_name] = make_delegate_func()
         
+        desc = f"Delegates a complex sub-task to the specialized agent '{agent_name}'. Description: {agent_obj.description}"
+        if agent_obj.delegation_instruction:
+            desc += f" Instructions for formulating the query: {agent_obj.delegation_instruction}"
+            
         schema = {
             "name": tool_name,
-            "description": f"Delegates a complex sub-task to the specialized agent '{agent_name}'. Description: {agent_obj.description}",
+            "description": desc,
             "parameters": {
                 "type": "object",
                 "properties": {
