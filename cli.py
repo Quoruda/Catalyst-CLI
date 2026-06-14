@@ -16,10 +16,51 @@ class SlashCommandCompleter(Completer):
             for cmd in self.commands:
                 if cmd.startswith(text):
                     yield Completion(cmd, start_position=-len(text))
+import json
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.styles import Style
 from agent import CatalystAgent
 from react import ReActAgent
+
+USER_CATALYST_DIR = os.path.expanduser("~/.catalyst")
+
+def load_user_config() -> dict:
+    config_path = os.path.join(USER_CATALYST_DIR, "config.json")
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {}
+
+def save_user_config(config: dict):
+    try:
+        os.makedirs(USER_CATALYST_DIR, exist_ok=True)
+        config_path = os.path.join(USER_CATALYST_DIR, "config.json")
+        with open(config_path, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=2)
+    except Exception:
+        pass
+
+def load_user_history() -> list:
+    history_path = os.path.join(USER_CATALYST_DIR, "history.json")
+    if os.path.exists(history_path):
+        try:
+            with open(history_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return []
+
+def save_user_history(history: list):
+    try:
+        os.makedirs(USER_CATALYST_DIR, exist_ok=True)
+        history_path = os.path.join(USER_CATALYST_DIR, "history.json")
+        with open(history_path, "w", encoding="utf-8") as f:
+            json.dump(history, f, indent=2)
+    except Exception:
+        pass
 
 def main():
     console = Console()
@@ -29,7 +70,12 @@ def main():
         console.print(Panel("[bold red]Error: No agents registered. Please define at least one agent in the 'agents/' directory.[/bold red]", title="Error"))
         sys.exit(1)
         
-    default_agent_name = "catalyst" if "catalyst" in available_agents else list(available_agents.keys())[0]
+    user_config = load_user_config()
+    saved_agent = user_config.get("default_agent")
+    if saved_agent and saved_agent in available_agents:
+        default_agent_name = saved_agent
+    else:
+        default_agent_name = "catalyst" if "catalyst" in available_agents else list(available_agents.keys())[0]
     
     current_agent_name = default_agent_name
     try:
@@ -108,11 +154,14 @@ def main():
                 continue
                 
             if user_input.lower() in ("/exit", "exit", "quit"):
+                save_user_config({"default_agent": current_agent_name})
+                save_user_history(history)
                 console.print("[yellow]Exiting Catalyst.[/yellow]")
                 break
                 
             if user_input.lower() == "/clear":
                 history.clear()
+                save_user_history(history)
                 console.print("[yellow]History cleared.[/yellow]")
                 continue
                 
@@ -146,6 +195,8 @@ def main():
                 current_agent_name = target_agent
                 react_agent = ReActAgent(agent, agent_name=current_agent_name)
                 history.clear()
+                save_user_config({"default_agent": current_agent_name})
+                save_user_history(history)
                 console.print(Panel(
                     f"[bold green]Switched to agent: {current_agent_name}[/bold green]\n"
                     f"[dim]Conversation history has been cleared for the new agent.[/dim]",
@@ -159,10 +210,10 @@ def main():
                     console.print("[yellow]No agents registered.[/yellow]")
                 else:
                     console.print("[bold cyan]Registered Agents:[/bold cyan]")
-                    for name, config in available_agents.items():
-                        engine = config.get("engine", "Unknown")
-                        desc = config.get("description", "No description provided.")
-                        tools_list = ", ".join(config.get("tools", []))
+                    for name, agent_obj in available_agents.items():
+                        engine = agent_obj.engine
+                        desc = agent_obj.description
+                        tools_list = ", ".join(agent_obj.tools)
                         console.print(f"[bold green]{name}[/bold green] (Engine: {engine}) - {desc}")
                         if tools_list:
                             console.print(f"  [dim]Tools:[/] {tools_list}")
@@ -199,6 +250,7 @@ def main():
             try:
                 is_generating = True
                 response = react_agent.run(user_input, history, step_callback=step_callback)
+                save_user_history(history)
                 console.print(Panel(Markdown(response), title="[bold green]Final Answer[/bold green]", border_style="green"))
                 console.print()
             finally:
@@ -214,6 +266,8 @@ def main():
                 console.print()
             continue
         except EOFError:
+            save_user_config({"default_agent": current_agent_name})
+            save_user_history(history)
             console.print("\n[yellow]Exiting Catalyst.[/yellow]")
             break
         except Exception as e:

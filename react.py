@@ -12,10 +12,10 @@ class ReActAgent:
         if not self.config:
             raise ValueError(f"Agent '{agent_name}' not found in registered agents.")
             
-        self.system_prompt = self.config["system_prompt"]
+        self.system_prompt = self.config.system_prompt
         
         from tools import tools_schema
-        allowed_tools = self.config.get("tools", [])
+        allowed_tools = self.config.tools
         self.agent_tools_schema = [
             schema for schema in tools_schema if schema["name"] in allowed_tools
         ]

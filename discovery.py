@@ -2,6 +2,17 @@ import os
 import sys
 import importlib.util
 
+class Agent:
+    def __init__(self, name: str, description: str, engine: str, tools: list[str], system_prompt: str):
+        self.name = name
+        self.description = description
+        self.engine = engine
+        self.tools = tools
+        self.system_prompt = system_prompt
+
+    def __repr__(self):
+        return f"<Agent name={self.name} engine={self.engine}>"
+
 available_tools = {}
 tools_schema = []
 
@@ -118,11 +129,18 @@ def load_agents():
                     name = agent_config.get("name")
                     if not name:
                         name = os.path.splitext(filename)[0]
-                        agent_config["name"] = name
                         
                     if name in available_agents:
                         raise ValueError(f"Duplicate agent registration detected: '{name}' in '{filepath}'")
-                    available_agents[name] = agent_config
+                        
+                    agent_obj = Agent(
+                        name=name,
+                        description=agent_config.get("description", "No description provided."),
+                        engine=agent_config.get("engine", "ReAct"),
+                        tools=agent_config.get("tools", []),
+                        system_prompt=agent_config.get("system_prompt", "")
+                    )
+                    available_agents[name] = agent_obj
                 except Exception as e:
                     if isinstance(e, ValueError):
                         raise e
