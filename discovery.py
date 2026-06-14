@@ -24,6 +24,7 @@ available_tools = {}
 tools_schema = []
 
 available_agents = {}
+available_engines = {}
 
 def get_resolution_paths(subdir_name: str) -> list[tuple[str, str]]:
     project_root = os.path.dirname(os.path.abspath(__file__))
@@ -73,6 +74,33 @@ def load_tools():
                     except Exception as e:
                         if isinstance(e, ValueError):
                             raise e
+
+def load_engines():
+    available_engines.clear()
+    paths = get_resolution_paths("engines")
+    
+    for directory, package_name in paths:
+        if not os.path.exists(directory):
+            continue
+            
+        for filename in os.listdir(directory):
+            if filename.endswith(".py") and filename != "__init__.py":
+                module_name = filename[:-3]
+                full_module_name = f"{package_name}.{module_name}"
+                filepath = os.path.join(directory, filename)
+                
+                spec = importlib.util.spec_from_file_location(full_module_name, filepath)
+                if spec and spec.loader:
+                    module = importlib.util.module_from_spec(spec)
+                    sys.modules[full_module_name] = module
+                    try:
+                        spec.loader.exec_module(module)
+                        engine_class = getattr(module, "Engine", None)
+                        if engine_class:
+                            engine_name = getattr(module, "ENGINE_NAME", module_name)
+                            available_engines[engine_name.lower()] = engine_class
+                    except Exception:
+                        pass
 
 def parse_agent_markdown(filepath: str) -> dict:
     with open(filepath, "r", encoding="utf-8") as f:
@@ -152,7 +180,7 @@ def load_agents():
                     else:
                         delegates_list = list(delegates_val) if delegates_val is not None else []
                         
-                    agent_obj = Agent(
+                    temp_config = Agent(
                         name=name,
                         description=agent_config.get("description", "No description provided."),
                         engine=agent_config.get("engine", "ReAct"),
@@ -161,6 +189,12 @@ def load_agents():
                         delegates=delegates_list,
                         delegation_instruction=agent_config.get("delegation_instruction", "")
                     )
+                    engine_key = temp_config.engine.lower()
+                    if engine_key in available_engines:
+                        engine_class = available_engines[engine_key]
+                        agent_obj = engine_class(temp_config)
+                    else:
+                        raise ValueError(f"Engine '{temp_config.engine}' for agent '{temp_config.name}' is not registered.")
                     available_agents[name] = agent_obj
                 except Exception as e:
                     if isinstance(e, ValueError):
@@ -211,5 +245,6 @@ def generate_delegation_tools():
         tools_schema.append(schema)
 
 load_tools()
+load_engines()
 load_agents()
 generate_delegation_tools()

@@ -19,8 +19,6 @@ class SlashCommandCompleter(Completer):
 import json
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.styles import Style
-from agent import CatalystAgent
-from react import ReActAgent
 
 USER_CATALYST_DIR = os.path.expanduser("~/.catalyst")
 
@@ -89,8 +87,7 @@ def main():
         current_agent_name = "catalyst" if "catalyst" in available_agents else list(available_agents.keys())[0]
     
     try:
-        agent = CatalystAgent()
-        react_agent = ReActAgent(agent, agent_name=current_agent_name)
+        react_agent = available_agents[current_agent_name]
     except Exception as e:
         console.print(Panel(f"[red]Error initializing agent: {str(e)}[/red]", title="Error"))
         sys.exit(1)
@@ -108,8 +105,8 @@ def main():
         history_count = len(history) // 2
         return [
             ("class:toolbar-label", f" Catalyst (Agent: {current_agent_name}) | "),
-            ("class:toolbar-value", f"Provider: {agent.config.provider.upper()} | "),
-            ("class:toolbar-value", f"Model: {agent.config.model} | "),
+            ("class:toolbar-value", f"Provider: {react_agent.catalyst_agent.config.provider.upper()} | "),
+            ("class:toolbar-value", f"Model: {react_agent.catalyst_agent.config.model} | "),
             ("class:toolbar-value", f"Dir: {cwd} | "),
             ("class:toolbar-value", f"Turns: {history_count}"),
         ]
@@ -231,7 +228,7 @@ def main():
                     continue
                 
                 current_agent_name = target_agent
-                react_agent = ReActAgent(agent, agent_name=current_agent_name)
+                react_agent = available_agents[current_agent_name]
                 history.clear()
                 save_user_config({"default_agent": current_agent_name})
                 save_user_history(history)
