@@ -1,17 +1,23 @@
 import os
 import sys
 import importlib.util
+import contextvars
 
 class Agent:
-    def __init__(self, name: str, description: str, engine: str, tools: list[str], system_prompt: str):
+    def __init__(self, name: str, description: str, engine: str, tools: list[str], system_prompt: str, delegates: list[str] = None):
         self.name = name
         self.description = description
         self.engine = engine
         self.tools = tools
         self.system_prompt = system_prompt
+        self.delegates = delegates or []
 
     def __repr__(self):
         return f"<Agent name={self.name} engine={self.engine}>"
+
+nesting_level = contextvars.ContextVar("nesting_level", default=0)
+current_step_callback = contextvars.ContextVar("current_step_callback", default=None)
+active_agent_name = contextvars.ContextVar("active_agent_name", default="catalyst")
 
 available_tools = {}
 tools_schema = []
@@ -55,6 +61,8 @@ def load_tools():
                         if hasattr(module, "schema"):
                             schema = getattr(module, "schema")
                             name = schema.get("name")
+                            if name.startswith("delegate_to_") or name.startswith("deleguate_to_"):
+                                raise ValueError(f"Custom tools are not allowed to start with 'delegate_to_' or 'deleguate_to_': '{name}' in '{filepath}'")
                             func = getattr(module, name, None)
                             if func:
                                 if name in available_tools:
@@ -122,8 +130,8 @@ def load_agents():
             continue
             
         for filename in os.listdir(directory):
+            filepath = os.path.join(directory, filename)
             if filename.endswith(".md"):
-                filepath = os.path.join(directory, filename)
                 try:
                     agent_config = parse_agent_markdown(filepath)
                     name = agent_config.get("name")
@@ -133,17 +141,65 @@ def load_agents():
                     if name in available_agents:
                         raise ValueError(f"Duplicate agent registration detected: '{name}' in '{filepath}'")
                         
+                    delegates_val = agent_config.get("delegates", [])
+                    if isinstance(delegates_val, str):
+                        delegates_list = [delegates_val] if delegates_val else []
+                    else:
+                        delegates_list = list(delegates_val) if delegates_val is not None else []
+                        
                     agent_obj = Agent(
                         name=name,
                         description=agent_config.get("description", "No description provided."),
                         engine=agent_config.get("engine", "ReAct"),
                         tools=agent_config.get("tools", []),
-                        system_prompt=agent_config.get("system_prompt", "")
+                        system_prompt=agent_config.get("system_prompt", ""),
+                        delegates=delegates_list
                     )
                     available_agents[name] = agent_obj
                 except Exception as e:
                     if isinstance(e, ValueError):
                         raise e
 
+def generate_delegation_tools():
+    for agent_name, agent_obj in list(available_agents.items()):
+        tool_name = f"delegate_to_{agent_name}"
+        if tool_name in available_tools:
+            continue
+            
+        def make_delegate_func(name=agent_name):
+            def delegate_func(query: str) -> str:
+                from agent import CatalystAgent
+                from react import ReActAgent
+                
+                level_token = nesting_level.set(nesting_level.get() + 1)
+                try:
+                    agent_wrapper = CatalystAgent()
+                    target_agent = ReActAgent(agent_wrapper, agent_name=name)
+                    parent_callback = current_step_callback.get()
+                    response = target_agent.run(query, history=[], step_callback=parent_callback)
+                    return response
+                finally:
+                    nesting_level.reset(level_token)
+            return delegate_func
+            
+        available_tools[tool_name] = make_delegate_func()
+        
+        schema = {
+            "name": tool_name,
+            "description": f"Delegates a complex sub-task to the specialized agent '{agent_name}'. Description: {agent_obj.description}",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The specific instruction or query for the agent."
+                    }
+                },
+                "required": ["query"]
+            }
+        }
+        tools_schema.append(schema)
+
 load_tools()
 load_agents()
+generate_delegation_tools()

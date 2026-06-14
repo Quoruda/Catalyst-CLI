@@ -29,17 +29,9 @@ class LiteLLMProvider(LLMProvider):
         self.api_base = config.api_base
         self.api_key = config.api_key
         
-        provider = config.provider.lower()
-        if provider == "gemini":
-            if not config.model.startswith("gemini/"):
-                self.model = f"gemini/{config.model}"
-            else:
-                self.model = config.model
-        elif provider == "ollama":
-            if not config.model.startswith("ollama/"):
-                self.model = f"ollama/{config.model}"
-            else:
-                self.model = config.model
+        provider = config.provider.lower() if config.provider else ""
+        if provider and "/" not in config.model:
+            self.model = f"{provider}/{config.model}"
         else:
             self.model = config.model
 

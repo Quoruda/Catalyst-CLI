@@ -120,27 +120,41 @@ def main():
     
     def step_callback(step_type: str, name: str, detail: str):
         nonlocal active_status
+        from discovery import nesting_level, active_agent_name
+        level = nesting_level.get()
+        indent = "  " * level
+        agent_name = active_agent_name.get()
         if step_type == "thought":
             if name == "start":
                 if active_status:
                     active_status.stop()
-                active_status = console.status("[bold green]│ Thinking...[/]")
+                active_status = console.status(f"[bold green]{indent}│ \\[{agent_name}] Thinking...[/]")
                 active_status.start()
             elif name == "done":
                 if active_status:
                     active_status.stop()
                     active_status = None
-                console.print("│ [green]Thinking[/]")
+                console.print(f"{indent}│ \\[{agent_name}] [green]Thinking[/]")
         elif step_type == "action":
             if active_status:
                 active_status.stop()
                 active_status = None
-            console.print(f"│ [magenta]Action:[/] [bold]{name}[/] [dim]({detail})[/]")
+            console.print(f"{indent}│ \\[{agent_name}] [magenta]Action:[/] [bold]{name}[/] [dim]({detail})[/]")
         elif step_type == "error":
             if active_status:
                 active_status.stop()
                 active_status = None
-            console.print(f"│ [bold red]Error:[/] {detail}")
+            console.print(f"{indent}│ \\[{agent_name}] [bold red]Error:[/] {detail}")
+        elif step_type == "agent_start":
+            if active_status:
+                active_status.stop()
+                active_status = None
+            console.print(f"{indent}│ \\[{name}] [cyan]Started[/]")
+        elif step_type == "agent_done":
+            if active_status:
+                active_status.stop()
+                active_status = None
+            console.print(f"{indent}│ \\[{name}] [cyan]Finished[/]")
 
     is_generating = False
     while True:
