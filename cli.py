@@ -31,9 +31,10 @@ def main():
         
     default_agent_name = "catalyst" if "catalyst" in available_agents else list(available_agents.keys())[0]
     
+    current_agent_name = default_agent_name
     try:
         agent = CatalystAgent()
-        react_agent = ReActAgent(agent, agent_name=default_agent_name)
+        react_agent = ReActAgent(agent, agent_name=current_agent_name)
     except Exception as e:
         console.print(Panel(f"[red]Error initializing agent: {str(e)}[/red]", title="Error"))
         sys.exit(1)
@@ -49,7 +50,7 @@ def main():
         cwd = os.getcwd()
         history_count = len(history) // 2
         return [
-            ("class:toolbar-label", " Catalyst | "),
+            ("class:toolbar-label", f" Catalyst (Agent: {current_agent_name}) | "),
             ("class:toolbar-value", f"Provider: {agent.config.provider.upper()} | "),
             ("class:toolbar-value", f"Model: {agent.config.model} | "),
             ("class:toolbar-value", f"Dir: {cwd} | "),
@@ -62,7 +63,7 @@ def main():
         "toolbar-value": "fg:#bbbbbb",
     })
     
-    completer = SlashCommandCompleter(["/exit", "/clear", "/help", "/history", "/tools", "/agents"])
+    completer = SlashCommandCompleter(["/exit", "/clear", "/help", "/history", "/tools", "/agents", "/agent"])
     session = PromptSession(
         history=InMemoryHistory(),
         completer=completer,
@@ -95,6 +96,7 @@ def main():
                 active_status = None
             console.print(f"│ [bold red]Error:[/] {detail}")
 
+    is_generating = False
     while True:
         try:
             user_input = session.prompt(
@@ -118,6 +120,7 @@ def main():
                 console.print(Panel(
                     "[bold cyan]Available Commands:[/bold cyan]\n"
                     "[bold]/help[/bold] - Show this help menu\n"
+                    "[bold]/agent <name>[/bold] - Switch to a different agent (clears conversation history)\n"
                     "[bold]/agents[/bold] - Show registered agents and configurations\n"
                     "[bold]/tools[/bold] - Show registered tools and descriptions\n"
                     "[bold]/clear[/bold] - Clear conversation history\n"
@@ -125,6 +128,28 @@ def main():
                     "[bold]/exit[/bold] - Exit Catalyst",
                     title="Help",
                     border_style="cyan"
+                ))
+                continue
+                
+            if user_input.lower().startswith("/agent ") or user_input.lower() == "/agent":
+                parts = user_input.split(maxsplit=1)
+                if len(parts) < 2:
+                    console.print(f"[yellow]Current active agent: {current_agent_name}[/yellow]")
+                    continue
+                
+                target_agent = parts[1].strip()
+                from discovery import available_agents
+                if target_agent not in available_agents:
+                    console.print(f"[red]Agent '{target_agent}' not found. Type /agents to see available agents.[/red]")
+                    continue
+                
+                current_agent_name = target_agent
+                react_agent = ReActAgent(agent, agent_name=current_agent_name)
+                history.clear()
+                console.print(Panel(
+                    f"[bold green]Switched to agent: {current_agent_name}[/bold green]\n"
+                    f"[dim]Conversation history has been cleared for the new agent.[/dim]",
+                    border_style="green"
                 ))
                 continue
                 
@@ -136,8 +161,9 @@ def main():
                     console.print("[bold cyan]Registered Agents:[/bold cyan]")
                     for name, config in available_agents.items():
                         engine = config.get("engine", "Unknown")
+                        desc = config.get("description", "No description provided.")
                         tools_list = ", ".join(config.get("tools", []))
-                        console.print(f"[bold green]{name}[/bold green] (Engine: {engine})")
+                        console.print(f"[bold green]{name}[/bold green] (Engine: {engine}) - {desc}")
                         if tools_list:
                             console.print(f"  [dim]Tools:[/] {tools_list}")
                         else:
@@ -171,15 +197,21 @@ def main():
                 
             console.print()
             try:
+                is_generating = True
                 response = react_agent.run(user_input, history, step_callback=step_callback)
                 console.print(Panel(Markdown(response), title="[bold green]Final Answer[/bold green]", border_style="green"))
                 console.print()
             finally:
+                is_generating = False
                 if active_status:
                     active_status.stop()
                     active_status = None
             
         except KeyboardInterrupt:
+            if is_generating:
+                console.print("\n[yellow]Generation cancelled by user.[/yellow]\n")
+            else:
+                console.print()
             continue
         except EOFError:
             console.print("\n[yellow]Exiting Catalyst.[/yellow]")

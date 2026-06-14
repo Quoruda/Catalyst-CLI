@@ -1,5 +1,6 @@
 ---
 name: catalyst
+description: General-purpose assistant equipped with all default system tools.
 engine: ReAct
 tools:
   - view_image
