@@ -212,17 +212,10 @@ def load_agents():
                         for attr_name in dir(module):
                             attr = getattr(module, attr_name)
                             if isinstance(attr, type) and issubclass(attr, BaseAgent) and attr is not BaseAgent:
-                                agent_obj = attr()
-                                import re
-                                if not re.match(r"^[a-zA-Z0-9_]+$", agent_obj.name):
-                                    raise ValueError(f"Agent name '{agent_obj.name}' in '{filepath}' contains invalid characters. Only alphanumeric characters and underscores are allowed.")
-                                if agent_obj.name in available_agents:
-                                    raise ValueError(f"Duplicate agent registration detected: '{agent_obj.name}' in '{filepath}'")
-                                available_agents[agent_obj.name] = agent_obj
-                                break
-                    except Exception as e:
-                        if isinstance(e, ValueError):
-                            raise e
+                                agent_instance = attr()
+                                available_agents[agent_instance.name] = agent_instance
+                    except Exception:
+                        pass
 
 def generate_delegation_tools():
     for agent_name, agent_obj in list(available_agents.items()):
@@ -232,15 +225,17 @@ def generate_delegation_tools():
             
         def make_delegate_func(name=agent_name):
             def delegate_func(query: str) -> str:
+                from agent import CatalystAgent
+                from react import ReActAgent
+                
                 level_token = nesting_level.set(nesting_level.get() + 1)
-                agent_token = active_agent_name.set(name)
                 try:
-                    target_agent = available_agents[name]
+                    agent_wrapper = CatalystAgent()
+                    target_agent = ReActAgent(agent_wrapper, agent_name=name)
                     parent_callback = current_step_callback.get()
                     response = target_agent.run(query, history=[], step_callback=parent_callback)
                     return response
                 finally:
-                    active_agent_name.reset(agent_token)
                     nesting_level.reset(level_token)
             return delegate_func
             

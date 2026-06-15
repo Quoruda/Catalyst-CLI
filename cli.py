@@ -167,8 +167,6 @@ def main():
     if parsed_args.message:
         console.print()
         try:
-            from discovery import active_agent_name
-            active_agent_name.set(current_agent_name)
             response = react_agent.run(parsed_args.message, [], step_callback=step_callback)
             console.print(Panel(Markdown(response), title="[bold green]Final Answer[/bold green]", border_style="green"))
             console.print()
@@ -286,8 +284,6 @@ def main():
             console.print()
             try:
                 is_generating = True
-                from discovery import active_agent_name
-                active_agent_name.set(current_agent_name)
                 response = react_agent.run(user_input, history, step_callback=step_callback)
                 save_user_history(history)
                 console.print(Panel(Markdown(response), title="[bold green]Final Answer[/bold green]", border_style="green"))
