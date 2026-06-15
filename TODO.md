@@ -20,6 +20,11 @@ This document tracks planned features, improvements, and architectural changes f
 - [ ] **Provider Configuration**: Allow registering and managing different providers (Ollama, Mistral, OpenAI) via a config file instead of relying entirely on `.env`.
 - [x] **Token Estimation**: Implement a real-time token counter and cost estimator for active sessions and specific agents.
 
+## ⚙️ Cognitive Engines
+- [ ] **Plan & Execute Engine**: Implement an engine that separates task planning from execution (ideal for highly complex, multi-step tasks).
+- [ ] **Reflection Engine**: Create an iterative engine that generates a solution, critiques its own work, and refines it before returning the final answer.
+- [ ] **Linear Chain Engine**: A deterministic, step-by-step engine without the ReAct loop for simpler, fast, and token-efficient pipelines.
+
 ## 🛠️ Agents & Tools
 - [x] **Clipboard Tool**: Create a tool to read from and write to the system clipboard.
 - [ ] **Context Mapper**: Tool to build a visual or structural map of the current project directory.
