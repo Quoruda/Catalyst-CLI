@@ -69,6 +69,11 @@ def load_tools():
                             if func:
                                 if name in available_tools:
                                     raise ValueError(f"Duplicate tool registration detected: '{name}' in '{filepath}'")
+                                
+                                # Enforce strict properties (no parameter hallucinations allowed)
+                                if "parameters" in schema and isinstance(schema["parameters"], dict):
+                                    schema["parameters"]["additionalProperties"] = False
+                                    
                                 available_tools[name] = func
                                 tools_schema.append(schema)
                     except Exception as e:
