@@ -53,20 +53,30 @@ class BaseAgent:
         return self._catalyst_agent
 
     def generate(self, messages: List[Dict[str, str]], tools: Optional[List[Dict[str, Any]]] = None, response_format: Optional[Dict[str, Any]] = None) -> LLMResponse:
-        return self.catalyst_agent.generate(messages, tools, response_format)
+        res = self.catalyst_agent.generate(messages, tools, response_format)
+        if hasattr(self, "last_context_size"):
+            self.last_context_size = res.usage["prompt_tokens"]
+        else:
+            self.last_context_size = res.usage["prompt_tokens"]
+        return res
 
     def call_tool(self, name: str, **kwargs) -> Any:
         from tools import available_tools
-        if name not in available_tools:
+        
+        actual_name = name
+        if name not in available_tools and f"delegate_to_{name}" in available_tools:
+            actual_name = f"delegate_to_{name}"
+            
+        if actual_name not in available_tools:
             err = f"Tool '{name}' not found."
             self.log_error(err)
             return err
             
         import json
-        self.log_action(name, json.dumps(kwargs))
+        self.log_action(actual_name, json.dumps(kwargs))
         try:
-            result = available_tools[name](**kwargs)
-            self.log_observation(name, str(result))
+            result = available_tools[actual_name](**kwargs)
+            self.log_observation(actual_name, str(result))
             return result
         except Exception as e:
             err = f"Error: {str(e)}"

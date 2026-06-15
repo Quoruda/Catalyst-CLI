@@ -8,10 +8,11 @@ from config import AgentConfig
 litellm.telemetry = False
 
 class LLMResponse:
-    def __init__(self, content: Optional[str] = None, tool_calls: Optional[List[Dict[str, Any]]] = None, reasoning: Optional[str] = None):
+    def __init__(self, content: Optional[str] = None, tool_calls: Optional[List[Dict[str, Any]]] = None, reasoning: Optional[str] = None, usage: Optional[Dict[str, int]] = None):
         self.content = content
         self.tool_calls = tool_calls or []
         self.reasoning = reasoning
+        self.usage = usage or {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
 class LLMProvider(ABC):
     @abstractmethod
@@ -81,4 +82,13 @@ class LiteLLMProvider(LLMProvider):
         if reasoning and not isinstance(reasoning, str):
             reasoning = str(reasoning)
             
-        return LLMResponse(content=message.content, tool_calls=tool_calls, reasoning=reasoning)
+        usage_dict = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+        if hasattr(response, "usage") and response.usage:
+            usage_dict["prompt_tokens"] = getattr(response.usage, "prompt_tokens", 0)
+            usage_dict["completion_tokens"] = getattr(response.usage, "completion_tokens", 0)
+            usage_dict["total_tokens"] = getattr(response.usage, "total_tokens", 0)
+            
+            from metrics import global_metrics
+            global_metrics.add(usage_dict["prompt_tokens"], usage_dict["completion_tokens"])
+            
+        return LLMResponse(content=message.content, tool_calls=tool_calls, reasoning=reasoning, usage=usage_dict)

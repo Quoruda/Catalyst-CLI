@@ -93,6 +93,7 @@ def main():
         sys.exit(1)
         
     if not parsed_args.message:
+        os.system('cls' if os.name == 'nt' else 'clear')
         console.print(Panel(
             "[bold cyan]CATALYST supervisor (ReAct Mode)[/bold cyan]",
             border_style="cyan"
@@ -103,11 +104,13 @@ def main():
     def get_toolbar_text():
         cwd = os.getcwd()
         history_count = len(history) // 2
+        from metrics import global_metrics
+        ctx_size = getattr(react_agent, "last_context_size", 0)
         return [
             ("class:toolbar-label", f" Catalyst (Agent: {current_agent_name}) | "),
-            ("class:toolbar-value", f"Provider: {react_agent.catalyst_agent.config.provider.upper()} | "),
+            ("class:toolbar-value", f"Ctx: {ctx_size}t | "),
+            ("class:toolbar-value", f"Total Session: {global_metrics.total_tokens}t | "),
             ("class:toolbar-value", f"Model: {react_agent.catalyst_agent.config.model} | "),
-            ("class:toolbar-value", f"Dir: {cwd} | "),
             ("class:toolbar-value", f"Turns: {history_count}"),
         ]
         
@@ -121,7 +124,8 @@ def main():
     session = PromptSession(
         history=InMemoryHistory(),
         completer=completer,
-        complete_while_typing=True
+        complete_while_typing=True,
+        bottom_toolbar=get_toolbar_text
     )
     
     active_status = None
@@ -183,8 +187,9 @@ def main():
     is_generating = False
     while True:
         try:
+            prompt_str = f"[{current_agent_name}] >>> "
             user_input = session.prompt(
-                ">>> ",
+                prompt_str,
                 bottom_toolbar=get_toolbar_text,
                 style=style
             )

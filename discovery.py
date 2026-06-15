@@ -225,13 +225,9 @@ def generate_delegation_tools():
             
         def make_delegate_func(name=agent_name):
             def delegate_func(query: str) -> str:
-                from agent import CatalystAgent
-                from react import ReActAgent
-                
                 level_token = nesting_level.set(nesting_level.get() + 1)
                 try:
-                    agent_wrapper = CatalystAgent()
-                    target_agent = ReActAgent(agent_wrapper, agent_name=name)
+                    target_agent = available_agents[name]
                     parent_callback = current_step_callback.get()
                     response = target_agent.run(query, history=[], step_callback=parent_callback)
                     return response
