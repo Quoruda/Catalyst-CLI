@@ -3,10 +3,10 @@
 This document tracks planned features, improvements, and architectural changes for the Catalyst-CLI project.
 
 ## 🗄️ Sessions & State Management
-- [ ] **Persistent Sessions**: Save message history to disk to allow resuming previous conversations.
-- [ ] **Session Locking**: Implement file locks to prevent multiple Catalyst processes from corrupting the same session.
-- [ ] **Session CLI Commands**: Add commands (e.g., `/sessions`, `/resume`) to manage and switch between active sessions.
-- [ ] **Ephemeral `-m` Flag**: Ensure that using the `-m` argument executes as a one-shot task and is intentionally NOT saved to any session history.
+- [x] **Persistent Sessions**: Save message history to disk to allow resuming previous conversations.
+- [x] **Session Locking**: Implement file locks to prevent multiple Catalyst processes from corrupting the same session.
+- [x] **Session CLI Commands**: Add commands (e.g., `/sessions`, `/resume`) to manage and switch between active sessions.
+- [x] **Ephemeral `-m` Flag**: Ensure that using the `-m` argument executes as a one-shot task and is intentionally NOT saved to any session history.
 
 ## 🖥️ User Interface (CLI)
 - [ ] **Agent Prompts**: Dynamically update the input prompt to reflect the active agent (e.g., `[deep_research] >>>`).

@@ -41,24 +41,101 @@ def save_user_config(config: dict):
     except Exception:
         pass
 
-def load_user_history() -> list:
-    history_path = os.path.join(USER_CATALYST_DIR, "history.json")
-    if os.path.exists(history_path):
+SESSIONS_DIR = os.path.join(USER_CATALYST_DIR, "sessions")
+
+def get_session_path(session_id: str) -> str:
+    return os.path.join(SESSIONS_DIR, f"{session_id}.json")
+
+def create_new_session() -> str:
+    os.makedirs(SESSIONS_DIR, exist_ok=True)
+    from datetime import datetime
+    return datetime.now().strftime("%Y%m%d_%H%M%S")
+
+def load_session(session_id: str) -> list:
+    path = get_session_path(session_id)
+    if os.path.exists(path):
         try:
-            with open(history_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return data.get("history", [])
         except Exception:
             pass
     return []
 
-def save_user_history(history: list):
+def save_session(session_id: str, history: list, agent_name: str):
+    os.makedirs(SESSIONS_DIR, exist_ok=True)
+    path = get_session_path(session_id)
+    title = "Empty Session"
+    for msg in history:
+        if msg.get("role") == "user":
+            title = msg.get("content", "")[:40] + "..."
+            break
+            
+    from datetime import datetime
+    data = {
+        "id": session_id,
+        "title": title,
+        "agent": agent_name,
+        "updated_at": datetime.now().isoformat(),
+        "history": history
+    }
     try:
-        os.makedirs(USER_CATALYST_DIR, exist_ok=True)
-        history_path = os.path.join(USER_CATALYST_DIR, "history.json")
-        with open(history_path, "w", encoding="utf-8") as f:
-            json.dump(history, f, indent=2)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
     except Exception:
         pass
+
+def list_sessions() -> list:
+    import glob
+    os.makedirs(SESSIONS_DIR, exist_ok=True)
+    sessions = []
+    for path in glob.glob(os.path.join(SESSIONS_DIR, "*.json")):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                sessions.append(json.load(f))
+        except Exception:
+            pass
+    sessions.sort(key=lambda x: x.get("updated_at", ""), reverse=True)
+    return sessions
+
+import fcntl
+import atexit
+
+class SessionLocker:
+    def __init__(self):
+        self.lock_file = None
+        self.fd = None
+        
+    def lock(self, session_id: str) -> bool:
+        self.unlock()
+        lock_path = get_session_path(session_id) + ".lock"
+        try:
+            self.fd = open(lock_path, 'w')
+            fcntl.flock(self.fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            self.lock_file = lock_path
+            self.fd.write(str(os.getpid()))
+            self.fd.flush()
+            return True
+        except (IOError, OSError):
+            if self.fd:
+                self.fd.close()
+                self.fd = None
+            return False
+            
+    def unlock(self):
+        if self.fd and self.lock_file:
+            try:
+                fcntl.flock(self.fd, fcntl.LOCK_UN)
+                self.fd.close()
+                if os.path.exists(self.lock_file):
+                    os.remove(self.lock_file)
+            except Exception:
+                pass
+            self.fd = None
+            self.lock_file = None
+
+session_locker = SessionLocker()
+atexit.register(session_locker.unlock)
 
 def main():
     import argparse
@@ -99,6 +176,11 @@ def main():
             border_style="cyan"
         ))
     
+    # Force une nouvelle session vierge à chaque démarrage
+    current_session_id = create_new_session()
+    session_locker.lock(current_session_id)
+    user_config["current_session_id"] = current_session_id
+    save_user_config(user_config)
     history = []
     
     def get_toolbar_text():
@@ -120,7 +202,7 @@ def main():
         "toolbar-value": "fg:#bbbbbb",
     })
     
-    completer = SlashCommandCompleter(["/exit", "/clear", "/help", "/history", "/tools", "/agents", "/agent"])
+    completer = SlashCommandCompleter(["/exit", "/clear", "/help", "/history", "/tools", "/agents", "/agent", "/sessions", "/session"])
     session = PromptSession(
         history=InMemoryHistory(),
         completer=completer,
@@ -197,14 +279,16 @@ def main():
                 continue
                 
             if user_input.lower() in ("/exit", "exit", "quit"):
-                save_user_config({"default_agent": current_agent_name})
-                save_user_history(history)
+                user_config["default_agent"] = current_agent_name
+                user_config["current_session_id"] = current_session_id
+                save_user_config(user_config)
+                save_session(current_session_id, history, current_agent_name)
                 console.print("[yellow]Exiting Catalyst.[/yellow]")
                 break
                 
             if user_input.lower() == "/clear":
                 history.clear()
-                save_user_history(history)
+                save_session(current_session_id, history, current_agent_name)
                 console.print("[yellow]History cleared.[/yellow]")
                 continue
                 
@@ -217,6 +301,9 @@ def main():
                     "[bold]/tools[/bold] - Show registered tools and descriptions\n"
                     "[bold]/clear[/bold] - Clear conversation history\n"
                     "[bold]/history[/bold] - View current raw conversation history\n"
+                    "[bold]/sessions[/bold] - List all saved sessions\n"
+                    "[bold]/session new[/bold] - Start a new blank session\n"
+                    "[bold]/session load <id>[/bold] - Load a previous session by ID\n"
                     "[bold]/exit[/bold] - Exit Catalyst",
                     title="Help",
                     border_style="cyan"
@@ -238,8 +325,10 @@ def main():
                 current_agent_name = target_agent
                 react_agent = available_agents[current_agent_name]
                 history.clear()
-                save_user_config({"default_agent": current_agent_name})
-                save_user_history(history)
+                user_config["default_agent"] = current_agent_name
+                user_config["current_session_id"] = current_session_id
+                save_user_config(user_config)
+                save_session(current_session_id, history, current_agent_name)
                 console.print(Panel(
                     f"[bold green]Switched to agent: {current_agent_name}[/bold green]\n"
                     f"[dim]Conversation history has been cleared for the new agent.[/dim]",
@@ -285,6 +374,54 @@ def main():
                         console.print(f"[{color}][bold]{role}:[/bold] {msg['content']}[/{color}]")
                 continue
                 
+            if user_input.lower() == "/sessions":
+                sessions = list_sessions()
+                if not sessions:
+                    console.print("[yellow]No saved sessions.[/yellow]")
+                else:
+                    console.print("[bold cyan]Saved Sessions:[/bold cyan]")
+                    for s in sessions:
+                        active_mark = "*" if s["id"] == current_session_id else " "
+                        console.print(f"{active_mark} [bold green]{s['id']}[/bold green] - [yellow]{s['title']}[/yellow] (Agent: {s.get('agent', 'unknown')})")
+                    console.print("\n[dim]Use /session load <id> to load a session, or /session new to start a new one.[/dim]")
+                continue
+                
+            if user_input.lower().startswith("/session "):
+                parts = user_input.split(maxsplit=2)
+                if len(parts) >= 2:
+                    subcmd = parts[1].lower()
+                    if subcmd == "new":
+                        new_id = create_new_session()
+                        session_locker.lock(new_id)
+                        current_session_id = new_id
+                        history.clear()
+                        user_config["current_session_id"] = current_session_id
+                        save_user_config(user_config)
+                        save_session(current_session_id, history, current_agent_name)
+                        console.print(Panel("[bold green]Started a new empty session.[/bold green]", border_style="green"))
+                        continue
+                    elif subcmd == "load" and len(parts) >= 3:
+                        target_id = parts[2].strip()
+                        
+                        if not session_locker.lock(target_id):
+                            console.print(f"[bold red]Session '{target_id}' is currently in use by another terminal.[/bold red]")
+                            continue
+                            
+                        loaded_history = load_session(target_id)
+                        if loaded_history or os.path.exists(get_session_path(target_id)):
+                            current_session_id = target_id
+                            history.clear()
+                            history.extend(loaded_history)
+                            user_config["current_session_id"] = current_session_id
+                            save_user_config(user_config)
+                            console.print(Panel(f"[bold green]Loaded session: {target_id}[/bold green]\n[dim]Turns: {len(history)//2}[/dim]", border_style="green"))
+                        else:
+                            session_locker.unlock()
+                            console.print(f"[red]Session '{target_id}' not found.[/red]")
+                            # Restore lock on current session
+                            session_locker.lock(current_session_id)
+                        continue
+                        
             if user_input.startswith("/"):
                 console.print(f"[red]Unknown command: {user_input}. Type /help for available commands.[/red]")
                 continue
@@ -293,7 +430,7 @@ def main():
             try:
                 is_generating = True
                 response = react_agent.run(user_input, history, step_callback=step_callback)
-                save_user_history(history)
+                save_session(current_session_id, history, current_agent_name)
                 console.print(Panel(Markdown(response), title="[bold green]Final Answer[/bold green]", border_style="green"))
                 console.print()
             finally:
