@@ -224,7 +224,7 @@ def generate_delegation_tools():
             continue
             
         def make_delegate_func(name=agent_name):
-            def delegate_func(query: str) -> str:
+            def delegate_func(query: str, **kwargs) -> str:
                 level_token = nesting_level.set(nesting_level.get() + 1)
                 try:
                     target_agent = available_agents[name]
