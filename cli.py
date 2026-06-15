@@ -142,7 +142,10 @@ def main():
                 if active_status:
                     active_status.stop()
                     active_status = None
-                console.print(f"{indent}│ \\[{agent_name}] [green]Thinking[/]")
+                if detail:
+                    console.print(f"{indent}│ \\[{agent_name}] [green]Thinking:[/] {detail}")
+                else:
+                    console.print(f"{indent}│ \\[{agent_name}] [green]Thinking[/]")
         elif step_type == "action":
             if active_status:
                 active_status.stop()
