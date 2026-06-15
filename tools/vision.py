@@ -24,12 +24,12 @@ def view_image(filepath: str, prompt: str = "Describe this image in detail.") ->
             
         model = os.getenv("LLM_MODEL", "gemini-1.5-flash")
         provider = os.getenv("LLM_PROVIDER", "gemini").lower()
-        if provider == "gemini" and not model.startswith("gemini/"):
-            model = f"gemini/{model}"
+        if provider and "/" not in model:
+            model = f"{provider}/{model}"
             
-        res = litellm.completion(
-            model=model,
-            messages=[
+        kwargs = {
+            "model": model,
+            "messages": [
                 {
                     "role": "user",
                     "content": [
@@ -42,9 +42,18 @@ def view_image(filepath: str, prompt: str = "Describe this image in detail.") ->
                         }
                     ]
                 }
-            ],
-            api_key=os.getenv("LLM_API_KEY")
-        )
+            ]
+        }
+        
+        api_key = os.getenv("LLM_API_KEY")
+        if api_key:
+            kwargs["api_key"] = api_key
+            
+        api_base = os.getenv("LLM_API_BASE")
+        if api_base:
+            kwargs["api_base"] = api_base
+            
+        res = litellm.completion(**kwargs)
         return res.choices[0].message.content or ""
     except Exception as e:
         return f"Error analyzing image: {str(e)}"
