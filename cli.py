@@ -152,6 +152,39 @@ def main():
         sys.exit(1)
         
     user_config = load_user_config()
+    if "providers" not in user_config:
+        from dotenv import load_dotenv
+        load_dotenv()
+        user_config["providers"] = {
+            "default": {
+                "provider": os.getenv("LLM_PROVIDER", "ollama").lower(),
+                "model": os.getenv("LLM_MODEL", "mistral:latest"),
+                "api_base": os.getenv("LLM_API_BASE", ""),
+                "api_key": os.getenv("LLM_API_KEY", ""),
+                "temperature": float(os.getenv("LLM_TEMPERATURE", "0.0"))
+            }
+        }
+        user_config["active_provider"] = "default"
+        save_user_config(user_config)
+        
+    def apply_provider(provider_name: str):
+        providers = user_config.get("providers", {})
+        if provider_name in providers:
+            cfg = providers[provider_name]
+            os.environ["LLM_PROVIDER"] = cfg.get("provider", "")
+            os.environ["LLM_MODEL"] = cfg.get("model", "")
+            if cfg.get("api_base"): os.environ["LLM_API_BASE"] = cfg["api_base"]
+            if cfg.get("api_key"): os.environ["LLM_API_KEY"] = cfg["api_key"]
+            if "temperature" in cfg: os.environ["LLM_TEMPERATURE"] = str(cfg["temperature"])
+            
+            from discovery import available_agents
+            for agent in available_agents.values():
+                agent._catalyst_agent = None
+
+    active_provider = user_config.get("active_provider")
+    if active_provider:
+        apply_provider(active_provider)
+
     saved_agent = user_config.get("default_agent")
     if parsed_args.agent:
         if parsed_args.agent not in available_agents:
@@ -208,7 +241,7 @@ def main():
         "toolbar-value": "fg:#bbbbbb",
     })
     
-    completer = SlashCommandCompleter(["/exit", "/clear", "/help", "/history", "/tools", "/agents", "/agent", "/sessions", "/session"])
+    completer = SlashCommandCompleter(["/exit", "/clear", "/help", "/history", "/tools", "/agents", "/agent", "/sessions", "/session", "/providers", "/provider"])
     session = PromptSession(
         history=InMemoryHistory(),
         completer=completer,
@@ -310,6 +343,8 @@ def main():
                     "[bold]/sessions[/bold] - List all saved sessions\n"
                     "[bold]/session new[/bold] - Start a new blank session\n"
                     "[bold]/session load <id>[/bold] - Load a previous session by ID\n"
+                    "[bold]/providers[/bold] - List available LLM providers\n"
+                    "[bold]/provider <name>[/bold] - Switch active LLM provider\n"
                     "[bold]/exit[/bold] - Exit Catalyst",
                     title="Help",
                     border_style="cyan"
@@ -368,6 +403,31 @@ def main():
                     for schema in tools_schema:
                         desc = schema.get("description", "No description provided.")
                         console.print(f"[bold green]{schema['name']}[/bold green] - {desc}")
+                continue
+                
+            if user_input.lower() == "/providers":
+                providers = user_config.get("providers", {})
+                if not providers:
+                    console.print("[yellow]No providers configured in ~/.catalyst/config.json[/yellow]")
+                else:
+                    console.print("[bold cyan]Configured Providers:[/bold cyan]")
+                    active = user_config.get("active_provider")
+                    for p_name, cfg in providers.items():
+                        mark = "*" if p_name == active else " "
+                        console.print(f"{mark} [bold green]{p_name}[/bold green] -> {cfg.get('provider')}/{cfg.get('model')}")
+                continue
+                
+            if user_input.lower().startswith("/provider "):
+                parts = user_input.split(maxsplit=1)
+                if len(parts) >= 2:
+                    p_name = parts[1].strip()
+                    if p_name in user_config.get("providers", {}):
+                        user_config["active_provider"] = p_name
+                        save_user_config(user_config)
+                        apply_provider(p_name)
+                        console.print(f"[bold green]Switched provider to '{p_name}'.[/bold green]")
+                    else:
+                        console.print(f"[bold red]Provider '{p_name}' not found.[/bold red]")
                 continue
                 
             if user_input.lower() == "/history":

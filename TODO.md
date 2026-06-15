@@ -17,7 +17,7 @@ This document tracks planned features, improvements, and architectural changes f
 
 ## 🧠 Models & Providers
 - [ ] **Multi-Model Support**: Support switching between model sizes on the fly (e.g., large, medium, small) depending on the task's complexity.
-- [ ] **Provider Configuration**: Allow registering and managing different providers (Ollama, Mistral, OpenAI) via a config file instead of relying entirely on `.env`.
+- [x] **Provider Configuration**: Allow registering and managing different providers (Ollama, Mistral, OpenAI) via a config file instead of relying entirely on `.env`.
 - [x] **Token Estimation**: Implement a real-time token counter and cost estimator for active sessions and specific agents.
 
 ## ⚙️ Cognitive Engines
