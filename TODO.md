@@ -10,7 +10,7 @@ This document tracks planned features, improvements, and architectural changes f
 
 ## 🖥️ User Interface (CLI)
 - [x] **Agent Prompts**: Dynamically update the input prompt to reflect the active agent (e.g., `[deep_research] >>>`).
-- [ ] **Startup Header**: Display a stylized ASCII Catalyst title upon launch.
+- [x] **Startup Header**: Display a stylized ASCII Catalyst title upon launch.
 - [x] **Clean Startup**: Automatically clear the terminal on boot for a cleaner UI.
 - [x] **Persistent Footer**: Keep a persistent footer (status bar) displaying current model, token usage, and active mode.
 - [ ] **Better token display**: better display token usage with proper units.

@@ -171,10 +171,16 @@ def main():
         
     if not parsed_args.message:
         os.system('cls' if os.name == 'nt' else 'clear')
-        console.print(Panel(
-            "[bold cyan]CATALYST supervisor (ReAct Mode)[/bold cyan]",
-            border_style="cyan"
-        ))
+        ascii_art = r"""
+  ____      _        _           _   
+ / ___|__ _| |_ __ _| |_   _ ___| |_ 
+| |   / _` | __/ _` | | | | / __| __|
+| |__| (_| | || (_| | | |_| \__ \ |_ 
+ \____\__,_|\__\__,_|_|\__, |___/\__|
+                       |___/         
+"""
+        console.print(f"[bold cyan]{ascii_art}[/bold cyan]")
+        console.print("[dim]Interactive Supervisor Agent (ReAct Mode)[/dim]\n")
     
     # Force une nouvelle session vierge à chaque démarrage
     current_session_id = create_new_session()
