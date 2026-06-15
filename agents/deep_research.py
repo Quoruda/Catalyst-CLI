@@ -67,8 +67,8 @@ class DeepResearchAgent(BaseAgent):
         self.log_thought("Planning initial research strategy...")
         prompt = (
             "You are a deep research planner. The user wants to research: '{query}'\n"
-            "Generate up to 3 distinct, highly optimized DuckDuckGo search queries to begin the research.\n"
-            "Use advanced boolean operators (quotes \"\", OR, -, site:, filetype:) to target the best primary sources.\n"
+            "Generate up to 3 distinct, highly optimized search queries to begin the research.\n"
+            "Queries should be simple, natural, and keyword-focused. Avoid complex boolean operators (like OR, AND, -, filetype:) as they do not work well on the search engine.\n"
             "Respond ONLY with a JSON array of strings. Example: [\"query 1\", \"query 2\"]\n"
         ).format(query=original_query)
         
@@ -99,11 +99,7 @@ class DeepResearchAgent(BaseAgent):
             "interesting new leads that need to be explored to provide a complete answer.\n"
             "If the current facts completely and thoroughly answer the user's research topic, and no further information is needed, return an empty array [].\n"
             "Otherwise, generate up to 2 specific follow-up search queries.\n"
-            "You should leverage DuckDuckGo advanced search syntax and boolean operators where applicable to focus your search. Examples:\n"
-            "- To target official sources: \"Claude 3.5 Sonnet\" (release OR announced OR launched) site:anthropic.com\n"
-            "- To exclude noise: site:docs.mistral.ai API \"generate\" -tutorial\n"
-            "- To search synonyms: (\"regulatory compliance\" OR legal) \"EU AI Act\" cost\n"
-            "- To target files: \"self-driving cars\" California DMV rules filetype:pdf\n\n"
+            "Queries should be simple, natural, and keyword-focused. Avoid complex boolean operators (like OR, AND, -, filetype:) as they do not work well on the search engine.\n"
             "Respond ONLY with a JSON array of strings. Example: [\"new query 1\", \"new query 2\"]\n\n"
             "Current Facts:\n{facts}"
         ).format(query=original_query, facts=facts_text)

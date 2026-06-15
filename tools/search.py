@@ -9,22 +9,34 @@ warnings.warn = custom_warn
 
 from duckduckgo_search import DDGS
 
+import time
+
 def web_search(query: str, max_results: int = 5) -> str:
-    try:
-        with DDGS() as ddgs:
-            results = [r for r in ddgs.text(query, max_results=max_results)]
-            if not results:
-                return "No search results found."
-            
-            output = []
-            for r in results:
-                title = r.get("title", "No Title")
-                url = r.get("href", "No URL")
-                body = r.get("body", "No Description")
-                output.append(f"Title: {title}\nURL: {url}\nSnippet: {body}\n---")
-            return "\n".join(output)
-    except Exception as e:
-        return f"Error performing search: {str(e)}"
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            with DDGS() as ddgs:
+                results = [r for r in ddgs.text(query, max_results=max_results)]
+                
+                # Si DuckDuckGo nous bloque silencieusement (renvoie une liste vide), on retente
+                if not results:
+                    if attempt < max_retries - 1:
+                        time.sleep(3)
+                        continue
+                    return "No search results found."
+                
+                output = []
+                for r in results:
+                    title = r.get("title", "No Title")
+                    url = r.get("href", "No URL")
+                    body = r.get("body", "No Description")
+                    output.append(f"Title: {title}\nURL: {url}\nSnippet: {body}\n---")
+                return "\n".join(output)
+        except Exception as e:
+            if attempt < max_retries - 1:
+                time.sleep(3)
+                continue
+            return f"Error performing search: {str(e)}"
 
 schema = {
     "name": "web_search",
