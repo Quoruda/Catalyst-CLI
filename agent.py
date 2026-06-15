@@ -1,15 +1,10 @@
 import os
 from typing import Dict, Any, List, Optional, Callable
-from dotenv import load_dotenv
 from config import AgentConfig
 from providers import LLMProvider, LiteLLMProvider, LLMResponse
 
 class CatalystAgent:
-    def __init__(self, env_path: Optional[str] = None):
-        if env_path:
-            load_dotenv(dotenv_path=env_path)
-        else:
-            load_dotenv()
+    def __init__(self):
             
         self.config = AgentConfig(
             provider=os.getenv("LLM_PROVIDER", "ollama").lower(),

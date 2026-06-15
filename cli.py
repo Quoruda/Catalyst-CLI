@@ -153,8 +153,6 @@ def main():
         
     user_config = load_user_config()
     if "providers" not in user_config:
-        from dotenv import load_dotenv
-        load_dotenv()
         user_config["providers"] = {
             "default": {
                 "provider": os.getenv("LLM_PROVIDER", "ollama").lower(),
