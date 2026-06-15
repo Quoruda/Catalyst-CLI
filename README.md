@@ -18,6 +18,16 @@ The agent's backend is powered by LiteLLM, offering compatibility across multipl
 
 The project requires Python 3.10+. Package dependencies are managed via `requirements.txt`.
 
+### System Dependencies (Linux)
+To enable the clipboard functionality (`clipboard_manager`), ensure you have the appropriate system utility installed:
+```bash
+# For X11 users (Ubuntu, Debian, etc.)
+sudo apt install xclip
+
+# For Wayland users
+sudo apt install wl-clipboard
+```
+
 ## Installation
 
 1. Clone the repository and navigate to the project directory:

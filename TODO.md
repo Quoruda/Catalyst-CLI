@@ -9,18 +9,19 @@ This document tracks planned features, improvements, and architectural changes f
 - [x] **Ephemeral `-m` Flag**: Ensure that using the `-m` argument executes as a one-shot task and is intentionally NOT saved to any session history.
 
 ## 🖥️ User Interface (CLI)
-- [ ] **Agent Prompts**: Dynamically update the input prompt to reflect the active agent (e.g., `[deep_research] >>>`).
+- [x] **Agent Prompts**: Dynamically update the input prompt to reflect the active agent (e.g., `[deep_research] >>>`).
 - [ ] **Startup Header**: Display a stylized ASCII Catalyst title upon launch.
-- [ ] **Clean Startup**: Automatically clear the terminal on boot for a cleaner UI.
-- [ ] **Persistent Footer**: Keep a persistent footer (status bar) displaying current model, token usage, and active mode.
+- [x] **Clean Startup**: Automatically clear the terminal on boot for a cleaner UI.
+- [x] **Persistent Footer**: Keep a persistent footer (status bar) displaying current model, token usage, and active mode.
+- [ ] **Better token display**: better display token usage with proper units.
 
 ## 🧠 Models & Providers
 - [ ] **Multi-Model Support**: Support switching between model sizes on the fly (e.g., large, medium, small) depending on the task's complexity.
 - [ ] **Provider Configuration**: Allow registering and managing different providers (Ollama, Mistral, OpenAI) via a config file instead of relying entirely on `.env`.
-- [ ] **Token Estimation**: Implement a real-time token counter and cost estimator for active sessions and specific agents.
+- [x] **Token Estimation**: Implement a real-time token counter and cost estimator for active sessions and specific agents.
 
 ## 🛠️ Agents & Tools
-- [ ] **Clipboard Tool**: Create a tool to read from and write to the system clipboard.
+- [x] **Clipboard Tool**: Create a tool to read from and write to the system clipboard.
 - [ ] **Context Mapper**: Tool to build a visual or structural map of the current project directory.
 - [ ] **Smart Commit & PR**: Agent/Tool to automatically generate semantic commits and draft pull requests.
 - [ ] **TDD Buddy**: Specialized agent dedicated to writing and running unit tests based on specifications.
