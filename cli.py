@@ -220,15 +220,25 @@ def main():
     save_user_config(user_config)
     history = []
     
+    def format_tokens(num: int) -> str:
+        if num >= 1_000_000:
+            return f"{num / 1_000_000:.2f}M"
+        elif num >= 1_000:
+            return f"{num / 1_000:.1f}k"
+        return str(num)
+
     def get_toolbar_text():
         cwd = os.getcwd()
         history_count = len(history) // 2
         from metrics import global_metrics
         ctx_size = getattr(react_agent, "last_context_size", 0)
+        formatted_ctx = format_tokens(ctx_size)
+        formatted_total = format_tokens(global_metrics.total_tokens)
+        cost_str = f" (${global_metrics.total_cost:.4f})" if global_metrics.total_cost > 0 else ""
         return [
             ("class:toolbar-label", f" Catalyst (Agent: {current_agent_name}) | "),
-            ("class:toolbar-value", f"Ctx: {ctx_size}t | "),
-            ("class:toolbar-value", f"Total Session: {global_metrics.total_tokens}t | "),
+            ("class:toolbar-value", f"Ctx: {formatted_ctx}t | "),
+            ("class:toolbar-value", f"Session: {formatted_total}t{cost_str} | "),
             ("class:toolbar-value", f"Model: {react_agent.catalyst_agent.config.model} | "),
             ("class:toolbar-value", f"Turns: {history_count}"),
         ]

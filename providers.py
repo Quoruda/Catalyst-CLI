@@ -88,7 +88,13 @@ class LiteLLMProvider(LLMProvider):
             usage_dict["completion_tokens"] = getattr(response.usage, "completion_tokens", 0)
             usage_dict["total_tokens"] = getattr(response.usage, "total_tokens", 0)
             
+            cost = 0.0
+            try:
+                import litellm
+                cost = litellm.completion_cost(completion_response=response)
+            except Exception:
+                pass
             from metrics import global_metrics
-            global_metrics.add(usage_dict["prompt_tokens"], usage_dict["completion_tokens"])
+            global_metrics.add(usage_dict["prompt_tokens"], usage_dict["completion_tokens"], cost)
             
         return LLMResponse(content=message.content, tool_calls=tool_calls, reasoning=reasoning, usage=usage_dict)
