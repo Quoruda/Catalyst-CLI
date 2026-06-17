@@ -7,8 +7,8 @@ This document tracks planned features, improvements, and architectural changes f
 - [x] **Session Locking**: Implement file locks to prevent multiple Catalyst processes from corrupting the same session.
 - [x] **Session CLI Commands**: Add commands (e.g., `/sessions`, `/resume`) to manage and switch between active sessions.
 - [x] **Ephemeral `-m` Flag**: Ensure that using the `-m` argument executes as a one-shot task and is intentionally NOT saved to any session history.
-- [ ] **NameSessions**: Let the user rename sessions as they go. 
-- [ ] **DeleteSession**: Let the user delete sessions as they go. 
+- [x] **NameSessions**: Let the user rename sessions as they go. 
+- [x] **DeleteSession**: Let the user delete sessions as they go. 
 
 ## 🖥️ User Interface (CLI)
 - [x] **Agent Prompts**: Dynamically update the input prompt to reflect the active agent (e.g., `[deep_research] >>>`).

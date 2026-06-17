@@ -62,19 +62,37 @@ def load_session(session_id: str) -> list:
             pass
     return []
 
-def save_session(session_id: str, history: list, agent_name: str):
+def save_session(session_id: str, history: list, agent_name: str, custom_title: str = None):
     os.makedirs(SESSIONS_DIR, exist_ok=True)
     path = get_session_path(session_id)
+    
     title = "Empty Session"
-    for msg in history:
-        if msg.get("role") == "user":
-            title = msg.get("content", "")[:40] + "..."
-            break
+    is_custom_title = False
+    
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                old_data = json.load(f)
+                if old_data.get("is_custom_title"):
+                    title = old_data.get("title", title)
+                    is_custom_title = True
+        except Exception:
+            pass
             
+    if custom_title is not None:
+        title = custom_title
+        is_custom_title = True
+    elif not is_custom_title:
+        for msg in history:
+            if msg.get("role") == "user":
+                title = msg.get("content", "")[:40] + "..."
+                break
+                
     from datetime import datetime
     data = {
         "id": session_id,
         "title": title,
+        "is_custom_title": is_custom_title,
         "agent": agent_name,
         "updated_at": datetime.now().isoformat(),
         "history": history
@@ -237,6 +255,7 @@ def main():
         cost_str = f" (${global_metrics.total_cost:.4f})" if global_metrics.total_cost > 0 else ""
         return [
             ("class:toolbar-label", f" Catalyst (Agent: {current_agent_name}) | "),
+            ("class:toolbar-value", f"ID: {current_session_id} | "),
             ("class:toolbar-value", f"Ctx: {formatted_ctx}t | "),
             ("class:toolbar-value", f"Session: {formatted_total}t{cost_str} | "),
             ("class:toolbar-value", f"Model: {react_agent.catalyst_agent.config.model} | "),
@@ -494,6 +513,33 @@ def main():
                             console.print(f"[red]Session '{target_id}' not found.[/red]")
                             # Restore lock on current session
                             session_locker.lock(current_session_id)
+                        continue
+                    elif subcmd == "rename" and len(parts) >= 3:
+                        new_name = parts[2].strip()
+                        save_session(current_session_id, history, current_agent_name, custom_title=new_name)
+                        console.print(Panel(f"[bold green]Session renamed to:[/bold green] {new_name}"))
+                        continue
+                    elif subcmd == "delete" and len(parts) >= 3:
+                        target_id = parts[2].strip()
+                        if target_id == current_session_id:
+                            console.print("[red]Cannot delete the currently active session. Switch to another session first or use /session new.[/red]")
+                            continue
+                            
+                        path = get_session_path(target_id)
+                        if os.path.exists(path):
+                            temp_locker = SessionLocker()
+                            if temp_locker.lock(target_id):
+                                try:
+                                    os.remove(path)
+                                    console.print(f"[green]Session '{target_id}' deleted successfully.[/green]")
+                                except Exception as e:
+                                    console.print(f"[red]Error deleting session: {e}[/red]")
+                                finally:
+                                    temp_locker.unlock()
+                            else:
+                                console.print(f"[red]Session '{target_id}' is in use and cannot be deleted.[/red]")
+                        else:
+                            console.print(f"[red]Session '{target_id}' not found.[/red]")
                         continue
                         
             if user_input.startswith("/"):
