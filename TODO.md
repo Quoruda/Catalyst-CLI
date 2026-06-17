@@ -30,6 +30,7 @@ This document tracks planned features, improvements, and architectural changes f
 
 ## 🛠️ Agents & Tools
 - [x] **Clipboard Tool**: Create a tool to read from and write to the system clipboard.
+- [x] **File Operations Tools**: Implement robust tools to read, write, and patch files (using SEARCH/REPLACE blocks) to allow direct codebase editing.
 - [ ] **Context Mapper**: Tool to build a visual or structural map of the current project directory.
 - [ ] **Git Agent**: Specialized agent to review recent diffs, stage files, generate semantic commits, and draft pull requests.
 - [ ] **Code Reviewer Agent**: Reflection-based sub-agent that automatically reviews code changes for bugs/style before suggesting them.
