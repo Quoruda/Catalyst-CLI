@@ -7,6 +7,8 @@ This document tracks planned features, improvements, and architectural changes f
 - [x] **Session Locking**: Implement file locks to prevent multiple Catalyst processes from corrupting the same session.
 - [x] **Session CLI Commands**: Add commands (e.g., `/sessions`, `/resume`) to manage and switch between active sessions.
 - [x] **Ephemeral `-m` Flag**: Ensure that using the `-m` argument executes as a one-shot task and is intentionally NOT saved to any session history.
+- [ ] **NameSessions**: Let the user rename sessions as they go. 
+- [ ] **DeleteSession**: Let the user delete sessions as they go. 
 
 ## 🖥️ User Interface (CLI)
 - [x] **Agent Prompts**: Dynamically update the input prompt to reflect the active agent (e.g., `[deep_research] >>>`).
@@ -32,6 +34,11 @@ This document tracks planned features, improvements, and architectural changes f
 - [ ] **TDD Buddy**: Specialized agent dedicated to writing and running unit tests based on specifications.
 - [ ] **Boilerplate & Scaffold**: Tool to rapidly generate standard project structures.
 - [ ] **Doc & Type Generator**: Tool to automatically generate docstrings, type hints, and documentation markdown.
+- [ ] **PDF Creator**: Tool and Agent to create and edit PDFs from Markdown.
+- [ ] **Slide Deck Generator**: Tool and Agent to create presentations and slide decks from Markdown.
+- [ ] **Image Search**: Tool and Agent to search for images online.
+
+
 
 ---
 *Note: This roadmap is a living document. Check off items as they are integrated into the main branch.*

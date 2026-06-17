@@ -1,4 +1,8 @@
 import json
+import os
+import datetime
+import getpass
+import platform
 from typing import Dict, Any, List, Optional, Callable
 from agent import BaseAgent
 
@@ -36,8 +40,16 @@ class Engine(BaseAgent):
             if step_callback:
                 step_callback("agent_start", self.name, query)
                 
+            live_context = f"\n\n---\n[LIVE SYSTEM CONTEXT]\nYou are running as a local AI agent on the user's machine. Here is the real-time context:\n- Current Date & Time: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n- Current Working Directory: {os.getcwd()}\n- Operating System: {platform.system()} {platform.release()}\n- The human user you are talking to is named: {getpass.getuser()}\n---"
+            full_system_prompt = self.system_prompt + live_context
+            
             if not history:
-                history.append({"role": "system", "content": self.system_prompt})
+                history.append({"role": "system", "content": full_system_prompt})
+            elif history[0].get("role") == "system":
+                history[0]["content"] = full_system_prompt
+            else:
+                history.insert(0, {"role": "system", "content": full_system_prompt})
+                
                 
             history.append({"role": "user", "content": query})
             messages = list(history)
