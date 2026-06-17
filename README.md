@@ -75,7 +75,17 @@ Inside the CLI, you can query the agent or run commands:
 
 ### Supported Slash Commands
 
-- /help: Display the command help menu.
-- /clear: Clear the active session history.
-- /history: Review the raw message exchanges.
-- /exit: Terminate the session.
+- `/help`: Display the command help menu.
+- `/agent list`: Show registered agents.
+- `/agent switch <name>`: Switch to a different agent.
+- `/tool list`: Show registered tools.
+- `/session list`: List all saved sessions.
+- `/session new`: Start a new blank session.
+- `/session resume <id>`: Resume a previous session.
+- `/session rename <name>`: Rename the current session.
+- `/session delete <id>`: Delete a session.
+- `/provider list`: List available LLM providers.
+- `/provider switch <name>`: Switch active LLM provider.
+- `/history`: Review the raw message exchanges.
+- `/clear`: Clear the active session history.
+- `/exit`: Terminate the session.
