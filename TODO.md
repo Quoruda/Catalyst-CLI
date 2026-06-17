@@ -38,7 +38,9 @@ This document tracks planned features, improvements, and architectural changes f
 - [ ] **Slide Deck Generator**: Tool and Agent to create presentations and slide decks from Markdown.
 - [ ] **Image Search**: Tool and Agent to search for images online.
 
-
+## 📚 Documentation & In-Context Learning
+- [ ] **In-Context Doc Loader**: Support loading entire folders of markdown/text documentation directly into an agent's system prompt using a `docs` key in their configuration file (ideal for high-context models or local Ollama with prompt caching).
+- [ ] **Dynamic Documentation Search (RAG)**: Create a tool that allows agents to query large local documentations via keyword/semantic search (fallback for low-context models).
 
 ---
 *Note: This roadmap is a living document. Check off items as they are integrated into the main branch.*
