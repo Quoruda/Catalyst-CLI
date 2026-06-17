@@ -60,8 +60,13 @@ def load_tools():
                     sys.modules[full_module_name] = module
                     try:
                         spec.loader.exec_module(module)
-                        if hasattr(module, "schema"):
-                            schema = getattr(module, "schema")
+                        schemas_to_register = []
+                        if hasattr(module, "schemas"):
+                            schemas_to_register.extend(getattr(module, "schemas"))
+                        elif hasattr(module, "schema"):
+                            schemas_to_register.append(getattr(module, "schema"))
+                            
+                        for schema in schemas_to_register:
                             name = schema.get("name")
                             if name.startswith("delegate_to_") or name.startswith("deleguate_to_"):
                                 raise ValueError(f"Custom tools are not allowed to start with 'delegate_to_' or 'deleguate_to_': '{name}' in '{filepath}'")

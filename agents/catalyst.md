@@ -6,6 +6,8 @@ tools:
   - view_image
   - read_pdf
   - execute_bash
+  - read_clipboard
+  - write_clipboard
 delegates:
   - web_researcher
   - deep_research

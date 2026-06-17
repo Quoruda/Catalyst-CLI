@@ -1,7 +1,65 @@
 import subprocess
 import os
+import tempfile
+
+read_schema = {
+    "name": "read_clipboard",
+    "description": "Reads from the system clipboard. If it contains text, it returns the text. If it contains an image, it saves it to a temp file and returns instructions to view it.",
+    "parameters": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": False
+    }
+}
+
+write_schema = {
+    "name": "write_clipboard",
+    "description": "Writes text to the user's system clipboard.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "content": {
+                "type": "string",
+                "description": "The exact text to write to the clipboard."
+            }
+        },
+        "required": ["content"],
+        "additionalProperties": False
+    }
+}
+
+schemas = [read_schema, write_schema]
+
+def check_and_save_image() -> str:
+    # Try Wayland first
+    try:
+        types = subprocess.check_output(['wl-paste', '--list-types'], stderr=subprocess.DEVNULL).decode('utf-8')
+        if 'image/png' in types or 'image/jpeg' in types:
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+            subprocess.check_call(['wl-paste', '--type', 'image/png'], stdout=tmp, stderr=subprocess.DEVNULL)
+            tmp.close()
+            return f"[Image detected in clipboard. Automatically saved to: {tmp.name}. Please use your 'view_image' tool on this path to analyze it.]"
+    except Exception:
+        pass
+        
+    # Try X11
+    try:
+        types = subprocess.check_output(['xclip', '-selection', 'clipboard', '-t', 'TARGETS', '-o'], stderr=subprocess.DEVNULL).decode('utf-8')
+        if 'image/png' in types or 'image/jpeg' in types:
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".png")
+            subprocess.check_call(['xclip', '-selection', 'clipboard', '-t', 'image/png', '-o'], stdout=tmp, stderr=subprocess.DEVNULL)
+            tmp.close()
+            return f"[Image detected in clipboard. Automatically saved to: {tmp.name}. Please use your 'view_image' tool on this path to analyze it.]"
+    except Exception:
+        pass
+        
+    return ""
 
 def read_clipboard() -> str:
+    image_msg = check_and_save_image()
+    if image_msg:
+        return image_msg
+        
     # Try pyperclip first
     try:
         import pyperclip
@@ -13,21 +71,27 @@ def read_clipboard() -> str:
         
     # Fallback Wayland (wl-paste)
     try:
-        return subprocess.check_output(['wl-paste']).decode('utf-8')
+        content = subprocess.check_output(['wl-paste'], stderr=subprocess.DEVNULL).decode('utf-8')
+        if content:
+            return content
     except Exception:
         pass
         
     # Fallback X11 (xclip)
     try:
-        return subprocess.check_output(['xclip', '-selection', 'clipboard', '-o']).decode('utf-8')
+        content = subprocess.check_output(['xclip', '-selection', 'clipboard', '-o'], stderr=subprocess.DEVNULL).decode('utf-8')
+        if content:
+            return content
     except Exception as e:
         return f"Error reading clipboard. Make sure xclip or wl-clipboard is installed. Details: {e}"
+        
+    return "Clipboard is empty or contains unsupported data."
 
-def write_clipboard(text: str) -> str:
+def write_clipboard(content: str) -> str:
     # Try pyperclip first
     try:
         import pyperclip
-        pyperclip.copy(text)
+        pyperclip.copy(content)
         return "Successfully copied to clipboard."
     except ImportError:
         pass
@@ -35,7 +99,7 @@ def write_clipboard(text: str) -> str:
     # Fallback Wayland (wl-copy)
     try:
         p = subprocess.Popen(['wl-copy'], stdin=subprocess.PIPE)
-        p.communicate(input=text.encode('utf-8'))
+        p.communicate(input=content.encode('utf-8'))
         if p.returncode == 0:
             return "Successfully copied to clipboard (using wl-copy)."
     except Exception:
@@ -44,42 +108,8 @@ def write_clipboard(text: str) -> str:
     # Fallback X11 (xclip)
     try:
         p = subprocess.Popen(['xclip', '-selection', 'clipboard'], stdin=subprocess.PIPE)
-        p.communicate(input=text.encode('utf-8'))
+        p.communicate(input=content.encode('utf-8'))
         if p.returncode == 0:
             return "Successfully copied to clipboard (using xclip)."
     except Exception as e:
         return f"Error writing to clipboard. Make sure xclip or wl-clipboard is installed. Details: {e}"
-
-schema = {
-    "name": "clipboard_manager",
-    "description": "Reads text from or writes text to the user's system clipboard.",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "action": {
-                "type": "string",
-                "enum": ["read", "write"],
-                "description": "The action to perform: 'read' to get the current clipboard contents, 'write' to set new contents."
-            },
-            "content": {
-                "type": "string",
-                "description": "The exact text to write to the clipboard. Must be provided if action is 'write'. Omit if action is 'read'."
-            }
-        },
-        "required": ["action"],
-        "additionalProperties": False
-    }
-}
-
-def clipboard_manager(action: str, content: str = "") -> str:
-    if action == "read":
-        res = read_clipboard()
-        if not res.strip():
-            return "Clipboard is currently empty."
-        return res
-    elif action == "write":
-        if not content:
-            return "Error: you must provide the 'content' parameter to write to the clipboard."
-        return write_clipboard(content)
-    else:
-        return f"Error: unknown action '{action}'. Must be 'read' or 'write'."
