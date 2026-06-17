@@ -16,6 +16,7 @@ This document tracks planned features, improvements, and architectural changes f
 - [x] **Clean Startup**: Automatically clear the terminal on boot for a cleaner UI.
 - [x] **Persistent Footer**: Keep a persistent footer (status bar) displaying current model, token usage, and active mode.
 - [x] **Better token display**: better display token usage with proper units.
+- [x] **Unified commands**: Compact all slash commands into a unified command system. ex: 'session' for all session management commands with 'list', 'resume', 'delete', 'rename' as subcommands.
 
 ## 🧠 Models & Providers
 - [ ] **Multi-Model Support**: Support switching between model sizes on the fly (e.g., large, medium, small) depending on the task's complexity.

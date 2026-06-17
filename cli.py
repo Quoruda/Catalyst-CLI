@@ -344,7 +344,7 @@ def main():
             if not user_input.strip():
                 continue
                 
-            if user_input.lower() in ("/exit", "exit", "quit"):
+            if user_input.lower() in ("/exit", "exit", "quit", "/quit"):
                 user_config["default_agent"] = current_agent_name
                 user_config["current_session_id"] = current_session_id
                 save_user_config(user_config)
@@ -352,197 +352,215 @@ def main():
                 console.print("[yellow]Exiting Catalyst.[/yellow]")
                 break
                 
-            if user_input.lower() == "/clear":
-                history.clear()
-                save_session(current_session_id, history, current_agent_name)
-                console.print("[yellow]History cleared.[/yellow]")
-                continue
-                
-            if user_input.lower() == "/help":
-                console.print(Panel(
-                    "[bold cyan]Available Commands:[/bold cyan]\n"
-                    "[bold]/help[/bold] - Show this help menu\n"
-                    "[bold]/agent <name>[/bold] - Switch to a different agent (clears conversation history)\n"
-                    "[bold]/agents[/bold] - Show registered agents and configurations\n"
-                    "[bold]/tools[/bold] - Show registered tools and descriptions\n"
-                    "[bold]/clear[/bold] - Clear conversation history\n"
-                    "[bold]/history[/bold] - View current raw conversation history\n"
-                    "[bold]/sessions[/bold] - List all saved sessions\n"
-                    "[bold]/session new[/bold] - Start a new blank session\n"
-                    "[bold]/session load <id>[/bold] - Load a previous session by ID\n"
-                    "[bold]/providers[/bold] - List available LLM providers\n"
-                    "[bold]/provider <name>[/bold] - Switch active LLM provider\n"
-                    "[bold]/exit[/bold] - Exit Catalyst",
-                    title="Help",
-                    border_style="cyan"
-                ))
-                continue
-                
-            if user_input.lower().startswith("/agent ") or user_input.lower() == "/agent":
-                parts = user_input.split(maxsplit=1)
-                if len(parts) < 2:
-                    console.print(f"[yellow]Current active agent: {current_agent_name}[/yellow]")
-                    continue
-                
-                target_agent = parts[1].strip()
-                from discovery import available_agents
-                if target_agent not in available_agents:
-                    console.print(f"[red]Agent '{target_agent}' not found. Type /agents to see available agents.[/red]")
-                    continue
-                
-                current_agent_name = target_agent
-                react_agent = available_agents[current_agent_name]
-                history.clear()
-                user_config["default_agent"] = current_agent_name
-                user_config["current_session_id"] = current_session_id
-                save_user_config(user_config)
-                save_session(current_session_id, history, current_agent_name)
-                console.print(Panel(
-                    f"[bold green]Switched to agent: {current_agent_name}[/bold green]\n"
-                    f"[dim]Conversation history has been cleared for the new agent.[/dim]",
-                    border_style="green"
-                ))
-                continue
-                
-            if user_input.lower() == "/agents":
-                from discovery import available_agents
-                if not available_agents:
-                    console.print("[yellow]No agents registered.[/yellow]")
-                else:
-                    console.print("[bold cyan]Registered Agents:[/bold cyan]")
-                    for name, agent_obj in available_agents.items():
-                        engine = agent_obj.engine
-                        desc = agent_obj.description
-                        tools_list = ", ".join(agent_obj.tools)
-                        console.print(f"[bold green]{name}[/bold green] (Engine: {engine}) - {desc}")
-                        if tools_list:
-                            console.print(f"  [dim]Tools:[/] {tools_list}")
-                        else:
-                            console.print("  [dim]Tools:[/] None")
-                continue
-                
-            if user_input.lower() == "/tools":
-                from tools import tools_schema
-                if not tools_schema:
-                    console.print("[yellow]No tools registered.[/yellow]")
-                else:
-                    console.print("[bold cyan]Registered Tools:[/bold cyan]")
-                    for schema in tools_schema:
-                        desc = schema.get("description", "No description provided.")
-                        console.print(f"[bold green]{schema['name']}[/bold green] - {desc}")
-                continue
-                
-            if user_input.lower() == "/providers":
-                providers = user_config.get("providers", {})
-                if not providers:
-                    console.print("[yellow]No providers configured in ~/.catalyst/config.json[/yellow]")
-                else:
-                    console.print("[bold cyan]Configured Providers:[/bold cyan]")
-                    active = user_config.get("active_provider")
-                    for p_name, cfg in providers.items():
-                        mark = "*" if p_name == active else " "
-                        console.print(f"{mark} [bold green]{p_name}[/bold green] -> {cfg.get('provider')}/{cfg.get('model')}")
-                continue
-                
-            if user_input.lower().startswith("/provider "):
-                parts = user_input.split(maxsplit=1)
-                if len(parts) >= 2:
-                    p_name = parts[1].strip()
-                    if p_name in user_config.get("providers", {}):
-                        user_config["active_provider"] = p_name
-                        save_user_config(user_config)
-                        apply_provider(p_name)
-                        console.print(f"[bold green]Switched provider to '{p_name}'.[/bold green]")
-                    else:
-                        console.print(f"[bold red]Provider '{p_name}' not found.[/bold red]")
-                continue
-                
-            if user_input.lower() == "/history":
-                if not history:
-                    console.print("[yellow]History is empty.[/yellow]")
-                else:
-                    for msg in history:
-                        role = msg["role"].upper()
-                        color = "green" if role == "USER" else "yellow" if role == "SYSTEM" else "cyan"
-                        console.print(f"[{color}][bold]{role}:[/bold] {msg['content']}[/{color}]")
-                continue
-                
-            if user_input.lower() == "/sessions":
-                sessions = list_sessions()
-                if not sessions:
-                    console.print("[yellow]No saved sessions.[/yellow]")
-                else:
-                    console.print("[bold cyan]Saved Sessions:[/bold cyan]")
-                    for s in sessions:
-                        active_mark = "*" if s["id"] == current_session_id else " "
-                        console.print(f"{active_mark} [bold green]{s['id']}[/bold green] - [yellow]{s['title']}[/yellow] (Agent: {s.get('agent', 'unknown')})")
-                    console.print("\n[dim]Use /session load <id> to load a session, or /session new to start a new one.[/dim]")
-                continue
-                
-            if user_input.lower().startswith("/session "):
+            if user_input.startswith("/"):
                 parts = user_input.split(maxsplit=2)
-                if len(parts) >= 2:
-                    subcmd = parts[1].lower()
-                    if subcmd == "new":
-                        new_id = create_new_session()
-                        session_locker.lock(new_id)
-                        current_session_id = new_id
-                        history.clear()
-                        user_config["current_session_id"] = current_session_id
-                        save_user_config(user_config)
-                        save_session(current_session_id, history, current_agent_name)
-                        console.print(Panel("[bold green]Started a new empty session.[/bold green]", border_style="green"))
-                        continue
-                    elif subcmd == "load" and len(parts) >= 3:
-                        target_id = parts[2].strip()
-                        
-                        if not session_locker.lock(target_id):
-                            console.print(f"[bold red]Session '{target_id}' is currently in use by another terminal.[/bold red]")
+                cmd = parts[0].lower()
+                
+                if cmd == "/clear":
+                    history.clear()
+                    save_session(current_session_id, history, current_agent_name)
+                    console.print("[yellow]History cleared.[/yellow]")
+                    continue
+                    
+                if cmd == "/history":
+                    if not history:
+                        console.print("[yellow]History is empty.[/yellow]")
+                    else:
+                        for msg in history:
+                            role = msg["role"].upper()
+                            color = "green" if role == "USER" else "yellow" if role == "SYSTEM" else "cyan"
+                            console.print(f"[{color}][bold]{role}:[/bold] {msg['content']}[/{color}]")
+                    continue
+                    
+                if cmd == "/agent":
+                    if len(parts) >= 2:
+                        subcmd = parts[1].lower()
+                        if subcmd == "list":
+                            from discovery import available_agents
+                            if not available_agents:
+                                console.print("[yellow]No agents registered.[/yellow]")
+                            else:
+                                console.print("[bold cyan]Registered Agents:[/bold cyan]")
+                                for name, agent_obj in available_agents.items():
+                                    engine = agent_obj.engine
+                                    desc = agent_obj.description
+                                    tools_list = ", ".join(agent_obj.tools)
+                                    console.print(f"[bold green]{name}[/bold green] (Engine: {engine}) - {desc}")
+                                    if tools_list:
+                                        console.print(f"  [dim]Tools:[/] {tools_list}")
+                                    else:
+                                        console.print("  [dim]Tools:[/] None")
                             continue
                             
-                        loaded_history = load_session(target_id)
-                        if loaded_history or os.path.exists(get_session_path(target_id)):
-                            current_session_id = target_id
+                        elif subcmd == "switch" and len(parts) >= 3:
+                            target_agent = parts[2].strip()
+                            from discovery import available_agents
+                            if target_agent not in available_agents:
+                                console.print(f"[red]Agent '{target_agent}' not found. Type /agent list to see available agents.[/red]")
+                                continue
+                            
+                            current_agent_name = target_agent
+                            react_agent = available_agents[current_agent_name]
                             history.clear()
-                            history.extend(loaded_history)
+                            user_config["default_agent"] = current_agent_name
                             user_config["current_session_id"] = current_session_id
                             save_user_config(user_config)
-                            console.print(Panel(f"[bold green]Loaded session: {target_id}[/bold green]\n[dim]Turns: {len(history)//2}[/dim]", border_style="green"))
-                        else:
-                            session_locker.unlock()
-                            console.print(f"[red]Session '{target_id}' not found.[/red]")
-                            # Restore lock on current session
-                            session_locker.lock(current_session_id)
-                        continue
-                    elif subcmd == "rename" and len(parts) >= 3:
-                        new_name = parts[2].strip()
-                        save_session(current_session_id, history, current_agent_name, custom_title=new_name)
-                        console.print(Panel(f"[bold green]Session renamed to:[/bold green] {new_name}"))
-                        continue
-                    elif subcmd == "delete" and len(parts) >= 3:
-                        target_id = parts[2].strip()
-                        if target_id == current_session_id:
-                            console.print("[red]Cannot delete the currently active session. Switch to another session first or use /session new.[/red]")
+                            save_session(current_session_id, history, current_agent_name)
+                            console.print(Panel(
+                                f"[bold green]Switched to agent: {current_agent_name}[/bold green]\n"
+                                f"[dim]Conversation history has been cleared for the new agent.[/dim]",
+                                border_style="green"
+                            ))
                             continue
                             
-                        path = get_session_path(target_id)
-                        if os.path.exists(path):
-                            temp_locker = SessionLocker()
-                            if temp_locker.lock(target_id):
-                                try:
-                                    os.remove(path)
-                                    console.print(f"[green]Session '{target_id}' deleted successfully.[/green]")
-                                except Exception as e:
-                                    console.print(f"[red]Error deleting session: {e}[/red]")
-                                finally:
-                                    temp_locker.unlock()
+                    console.print("[yellow]Usage: /agent list | /agent switch <name>[/yellow]")
+                    continue
+                    
+                if cmd == "/provider":
+                    if len(parts) >= 2:
+                        subcmd = parts[1].lower()
+                        if subcmd == "list":
+                            providers = user_config.get("providers", {})
+                            if not providers:
+                                console.print("[yellow]No providers configured in ~/.catalyst/config.json[/yellow]")
                             else:
-                                console.print(f"[red]Session '{target_id}' is in use and cannot be deleted.[/red]")
-                        else:
-                            console.print(f"[red]Session '{target_id}' not found.[/red]")
-                        continue
-                        
-            if user_input.startswith("/"):
+                                console.print("[bold cyan]Configured Providers:[/bold cyan]")
+                                active = user_config.get("active_provider")
+                                for p_name, cfg in providers.items():
+                                    mark = "*" if p_name == active else " "
+                                    console.print(f"{mark} [bold green]{p_name}[/bold green] -> {cfg.get('provider')}/{cfg.get('model')}")
+                            continue
+                            
+                        elif subcmd == "switch" and len(parts) >= 3:
+                            p_name = parts[2].strip()
+                            if p_name in user_config.get("providers", {}):
+                                user_config["active_provider"] = p_name
+                                save_user_config(user_config)
+                                apply_provider(p_name)
+                                console.print(f"[bold green]Switched provider to '{p_name}'.[/bold green]")
+                            else:
+                                console.print(f"[bold red]Provider '{p_name}' not found.[/bold red]")
+                            continue
+                            
+                    console.print("[yellow]Usage: /provider list | /provider switch <name>[/yellow]")
+                    continue
+                    
+                if cmd == "/tool":
+                    if len(parts) >= 2:
+                        subcmd = parts[1].lower()
+                        if subcmd == "list":
+                            from tools import tools_schema
+                            if not tools_schema:
+                                console.print("[yellow]No tools registered.[/yellow]")
+                            else:
+                                console.print("[bold cyan]Registered Tools:[/bold cyan]")
+                                for schema in tools_schema:
+                                    desc = schema.get("description", "No description provided.")
+                                    console.print(f"[bold green]{schema['name']}[/bold green] - {desc}")
+                            continue
+                    console.print("[yellow]Usage: /tool list[/yellow]")
+                    continue
+                    
+                if cmd == "/session":
+                    if len(parts) >= 2:
+                        subcmd = parts[1].lower()
+                        if subcmd == "list":
+                            sessions = list_sessions()
+                            if not sessions:
+                                console.print("[yellow]No saved sessions.[/yellow]")
+                            else:
+                                console.print("[bold cyan]Saved Sessions:[/bold cyan]")
+                                for s in sessions:
+                                    active_mark = "*" if s["id"] == current_session_id else " "
+                                    console.print(f"{active_mark} [bold green]{s['id']}[/bold green] - [yellow]{s['title']}[/yellow] (Agent: {s.get('agent', 'unknown')})")
+                                console.print("\n[dim]Use /session resume <id> to load a session, or /session new to start a new one.[/dim]")
+                            continue
+                            
+                        elif subcmd == "new":
+                            new_id = create_new_session()
+                            session_locker.lock(new_id)
+                            current_session_id = new_id
+                            history.clear()
+                            user_config["current_session_id"] = current_session_id
+                            save_user_config(user_config)
+                            save_session(current_session_id, history, current_agent_name)
+                            console.print(Panel("[bold green]Started a new empty session.[/bold green]", border_style="green"))
+                            continue
+                            
+                        elif subcmd == "resume" and len(parts) >= 3:
+                            target_id = parts[2].strip()
+                            if not session_locker.lock(target_id):
+                                console.print(f"[bold red]Session '{target_id}' is currently in use by another terminal.[/bold red]")
+                                continue
+                            
+                            loaded_history = load_session(target_id)
+                            if loaded_history or os.path.exists(get_session_path(target_id)):
+                                current_session_id = target_id
+                                history.clear()
+                                history.extend(loaded_history)
+                                user_config["current_session_id"] = current_session_id
+                                save_user_config(user_config)
+                                console.print(Panel(f"[bold green]Resumed session: {target_id}[/bold green]\n[dim]Turns: {len(history)//2}[/dim]", border_style="green"))
+                            else:
+                                session_locker.unlock()
+                                console.print(f"[red]Session '{target_id}' not found.[/red]")
+                                session_locker.lock(current_session_id)
+                            continue
+                            
+                        elif subcmd == "rename" and len(parts) >= 3:
+                            new_name = parts[2].strip()
+                            save_session(current_session_id, history, current_agent_name, custom_title=new_name)
+                            console.print(Panel(f"[bold green]Session renamed to:[/bold green] {new_name}"))
+                            continue
+                            
+                        elif subcmd == "delete" and len(parts) >= 3:
+                            target_id = parts[2].strip()
+                            if target_id == current_session_id:
+                                console.print("[red]Cannot delete the currently active session. Switch to another session first or use /session new.[/red]")
+                                continue
+                            
+                            path = get_session_path(target_id)
+                            if os.path.exists(path):
+                                temp_locker = SessionLocker()
+                                if temp_locker.lock(target_id):
+                                    try:
+                                        os.remove(path)
+                                        console.print(f"[green]Session '{target_id}' deleted successfully.[/green]")
+                                    except Exception as e:
+                                        console.print(f"[red]Error deleting session: {e}[/red]")
+                                    finally:
+                                        temp_locker.unlock()
+                                else:
+                                    console.print(f"[red]Session '{target_id}' is in use and cannot be deleted.[/red]")
+                            else:
+                                console.print(f"[red]Session '{target_id}' not found.[/red]")
+                            continue
+                            
+                    console.print("[yellow]Usage: /session list | /session new | /session resume <id> | /session rename <name> | /session delete <id>[/yellow]")
+                    continue
+
+                if cmd == "/help":
+                    console.print(Panel(
+                        "[bold cyan]Available Commands:[/bold cyan]\n"
+                        "[bold]/help[/bold] - Show this help menu\n"
+                        "[bold]/agent list[/bold] - Show registered agents\n"
+                        "[bold]/agent switch <name>[/bold] - Switch to a different agent\n"
+                        "[bold]/tool list[/bold] - Show registered tools\n"
+                        "[bold]/session list[/bold] - List all saved sessions\n"
+                        "[bold]/session new[/bold] - Start a new blank session\n"
+                        "[bold]/session resume <id>[/bold] - Resume a previous session\n"
+                        "[bold]/session rename <name>[/bold] - Rename the current session\n"
+                        "[bold]/session delete <id>[/bold] - Delete a session\n"
+                        "[bold]/provider list[/bold] - List available LLM providers\n"
+                        "[bold]/provider switch <name>[/bold] - Switch active LLM provider\n"
+                        "[bold]/history[/bold] - View current raw conversation history\n"
+                        "[bold]/clear[/bold] - Clear conversation history\n"
+                        "[bold]/exit[/bold] - Exit Catalyst",
+                        title="Help",
+                        border_style="cyan"
+                    ))
+                    continue
+
                 console.print(f"[red]Unknown command: {user_input}. Type /help for available commands.[/red]")
                 continue
                 
