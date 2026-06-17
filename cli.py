@@ -7,15 +7,32 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import Completer, Completion
 
 class SlashCommandCompleter(Completer):
-    def __init__(self, commands):
-        self.commands = commands
+    def __init__(self, command_tree):
+        self.command_tree = command_tree
         
     def get_completions(self, document, complete_event):
         text = document.text_before_cursor
-        if text.startswith("/") and " " not in text:
-            for cmd in self.commands:
-                if cmd.startswith(text):
-                    yield Completion(cmd, start_position=-len(text))
+        if not text.startswith("/"):
+            return
+            
+        parts = text.split()
+        if len(parts) == 1 and not text.endswith(" "):
+            word = parts[0]
+            for cmd in self.command_tree:
+                if cmd.startswith(word):
+                    yield Completion(cmd, start_position=-len(word))
+        elif len(parts) == 1 and text.endswith(" "):
+            cmd = parts[0].lower()
+            if cmd in self.command_tree:
+                for sub in self.command_tree[cmd]:
+                    yield Completion(sub, start_position=0)
+        elif len(parts) == 2 and not text.endswith(" "):
+            cmd = parts[0].lower()
+            sub_word = parts[1]
+            if cmd in self.command_tree:
+                for sub in self.command_tree[cmd]:
+                    if sub.startswith(sub_word):
+                        yield Completion(sub, start_position=-len(sub_word))
 import json
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.styles import Style
@@ -268,7 +285,18 @@ def main():
         "toolbar-value": "fg:#bbbbbb",
     })
     
-    completer = SlashCommandCompleter(["/exit", "/clear", "/help", "/history", "/tools", "/agents", "/agent", "/sessions", "/session", "/providers", "/provider"])
+    command_tree = {
+        "/exit": [],
+        "/quit": [],
+        "/clear": [],
+        "/history": [],
+        "/help": [],
+        "/agent": ["list", "switch"],
+        "/tool": ["list"],
+        "/session": ["list", "resume", "new", "rename", "delete"],
+        "/provider": ["list", "switch"]
+    }
+    completer = SlashCommandCompleter(command_tree)
     session = PromptSession(
         history=InMemoryHistory(),
         completer=completer,
