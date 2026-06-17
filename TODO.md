@@ -30,13 +30,18 @@ This document tracks planned features, improvements, and architectural changes f
 ## 🛠️ Agents & Tools
 - [x] **Clipboard Tool**: Create a tool to read from and write to the system clipboard.
 - [ ] **Context Mapper**: Tool to build a visual or structural map of the current project directory.
-- [ ] **Smart Commit & PR**: Agent/Tool to automatically generate semantic commits and draft pull requests.
+- [ ] **Git Agent**: Specialized agent to review recent diffs, stage files, generate semantic commits, and draft pull requests.
+- [ ] **Code Reviewer Agent**: Reflection-based sub-agent that automatically reviews code changes for bugs/style before suggesting them.
+- [ ] **Human-in-the-Loop (Critical Confirmation)**: (Optional) Interrupt and prompt the user for permission before running critical tools (like write_file or execute_bash) with visual diffs.
 - [ ] **TDD Buddy**: Specialized agent dedicated to writing and running unit tests based on specifications.
 - [ ] **Boilerplate & Scaffold**: Tool to rapidly generate standard project structures.
 - [ ] **Doc & Type Generator**: Tool to automatically generate docstrings, type hints, and documentation markdown.
 - [ ] **PDF Creator**: Tool and Agent to create and edit PDFs from Markdown.
 - [ ] **Slide Deck Generator**: Tool and Agent to create presentations and slide decks from Markdown.
 - [ ] **Image Search**: Tool and Agent to search for images online.
+
+## 🧠 Memory & Personalization
+- [ ] **Long-term Memory**: Implement a persistent profile (`memory.json`) for the agent to remember user preferences, name, and project contexts across sessions.
 
 ## 📚 Documentation & In-Context Learning
 - [ ] **In-Context Doc Loader**: Support loading entire folders of markdown/text documentation directly into an agent's system prompt using a `docs` key in their configuration file (ideal for high-context models or local Ollama with prompt caching).
