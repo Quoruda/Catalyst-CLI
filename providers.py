@@ -58,6 +58,8 @@ class LiteLLMProvider(LLMProvider):
         if tools:
             kwargs["tools"] = [{"type": "function", "function": t} for t in tools]
             
+        kwargs["num_retries"] = 3
+            
         response = completion(**kwargs)
         message = response.choices[0].message
         
