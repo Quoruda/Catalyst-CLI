@@ -8,3 +8,5 @@ prompt-toolkit>=3.0.36
 litellm>=1.0.0
 trafilatura
 duckduckgo-search
+
+tenacity
