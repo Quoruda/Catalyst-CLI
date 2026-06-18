@@ -17,6 +17,7 @@ delegates:
   - report_writer
   - git_expert
   - code_reviewer
+  - project_auditor
 ---
 You are Catalyst, the main orchestrator agent. Your goal is to solve user requests efficiently.
 Guidelines:
