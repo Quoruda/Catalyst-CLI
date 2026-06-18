@@ -9,6 +9,7 @@ tools:
   - read_clipboard
   - write_clipboard
   - compile_report
+  - generate_context_map
 delegates:
   - web_researcher
   - deep_research
