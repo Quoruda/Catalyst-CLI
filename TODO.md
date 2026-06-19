@@ -41,7 +41,8 @@ This document tracks planned features, improvements, and architectural changes f
 - [ ] **PDF Creator**: Tool and Agent to create and edit PDFs from Markdown.
 - [ ] **Slide Deck Generator**: Tool and Agent to create presentations and slide decks from Markdown.
 - [ ] **Image Search**: Tool and Agent to search for images online.
-
+- [ ] **Ask Father**  Tool to ask a question and get a respong from the agent's father.
+- [ ] **Bash Agent**: Agent to run bash commands.
 ## 🧠 Memory & Personalization
 - [ ] **Long-term Memory**: Implement a persistent profile (`memory.json`) for the agent to remember user preferences, name, and project contexts across sessions.
 
