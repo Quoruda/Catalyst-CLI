@@ -31,6 +31,7 @@ class LiteLLMProvider(LLMProvider):
         self.api_key = config.api_key
         
         provider = config.provider.lower() if config.provider else ""
+        self.provider = provider
         if provider and "/" not in config.model:
             self.model = f"{provider}/{config.model}"
         else:
@@ -47,6 +48,8 @@ class LiteLLMProvider(LLMProvider):
             "messages": messages,
             "temperature": self.temperature,
         }
+        if self.provider:
+            kwargs["custom_llm_provider"] = self.provider
         if self.api_base:
             kwargs["api_base"] = self.api_base
         if self.api_key:
