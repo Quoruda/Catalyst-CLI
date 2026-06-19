@@ -28,6 +28,18 @@ def write_file(filepath: str, content: str) -> str:
     except Exception as e:
         return f"Error writing file: {str(e)}"
 
+def append_file(filepath: str, content: str) -> str:
+    """Appends content to the end of a file, creating it if it doesn't exist."""
+    try:
+        parent = os.path.dirname(filepath)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        with open(filepath, "a", encoding="utf-8") as f:
+            f.write(content)
+        return f"Content appended successfully to '{filepath}'."
+    except Exception as e:
+        return f"Error appending to file: {str(e)}"
+
 def patch_file(filepath: str, patch: str) -> str:
     """Applies one or more SEARCH/REPLACE blocks to a file."""
     if not os.path.exists(filepath):
@@ -107,6 +119,25 @@ write_file_schema = {
     }
 }
 
+append_file_schema = {
+    "name": "append_file",
+    "description": "Appends text directly to the end of an existing file (or creates it if it doesn't exist). Extremely useful and efficient for writing documents section by section.",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "filepath": {
+                "type": "string",
+                "description": "The absolute or relative path to the file."
+            },
+            "content": {
+                "type": "string",
+                "description": "The content to append to the end of the file."
+            }
+        },
+        "required": ["filepath", "content"]
+    }
+}
+
 patch_file_schema = {
     "name": "patch_file",
     "description": (
@@ -135,4 +166,4 @@ patch_file_schema = {
     }
 }
 
-schemas = [read_file_schema, write_file_schema, patch_file_schema]
+schemas = [read_file_schema, write_file_schema, append_file_schema, patch_file_schema]
