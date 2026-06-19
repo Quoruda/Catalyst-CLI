@@ -543,6 +543,27 @@ def main():
                             
                         elif subcmd == "delete" and len(parts) >= 3:
                             target_id = parts[2].strip()
+                            if target_id == "*":
+                                sessions = list_sessions()
+                                deleted_count = 0
+                                for sess in sessions:
+                                    sess_id = sess.get("id")
+                                    if not sess_id or sess_id == current_session_id:
+                                        continue
+                                    path = get_session_path(sess_id)
+                                    if os.path.exists(path):
+                                        temp_locker = SessionLocker()
+                                        if temp_locker.lock(sess_id):
+                                            try:
+                                                os.remove(path)
+                                                deleted_count += 1
+                                            except Exception:
+                                                pass
+                                            finally:
+                                                temp_locker.unlock()
+                                console.print(f"[green]Deleted {deleted_count} inactive sessions.[/green]")
+                                continue
+                            
                             if target_id == current_session_id:
                                 console.print("[red]Cannot delete the currently active session. Switch to another session first or use /session new.[/red]")
                                 continue
