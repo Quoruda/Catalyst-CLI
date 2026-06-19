@@ -19,17 +19,20 @@ class Engine(BaseAgent):
             delegation_instruction=agent_config.delegation_instruction
         )
         self.system_prompt = agent_config.system_prompt
-        
+
+    @property
+    def agent_tools_schema(self):
         from tools import tools_schema
         allowed_tools = list(self.tools)
         for delegate_name in self.delegates:
             allowed_tools.append(f"delegate_to_{delegate_name}")
             
-        self.agent_tools_schema = []
+        schema_list = []
         for schema in tools_schema:
             name = schema["name"]
             if name in allowed_tools:
-                self.agent_tools_schema.append(schema)
+                schema_list.append(schema)
+        return schema_list
 
     def generate_plan(self, query: str) -> List[str]:
         self.log_thought("Generating a step-by-step plan for the objective.")
@@ -103,21 +106,22 @@ Respond ONLY with a JSON array of strings representing the updated remaining ste
             
         return remaining_plan # Fallback
 
-    def execute_step(self, step_query: str, query: str) -> str:
+    def execute_step(self, step_query: str, query: str, execution_history: List[Dict[str, Any]]) -> str:
         self.log_thought(f"Executing step: {step_query}")
         
         live_context = f"\n\n---\n[LIVE SYSTEM CONTEXT]\nYou are running as a local AI agent on the user's machine.\n- Current Date & Time: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n- Current Working Directory: {os.getcwd()}\n---"
         
         full_system_prompt = self.system_prompt + live_context + f"\n\nYour overarching objective is: {query}\nYour IMMEDIATE task is strictly: {step_query}\nUse your tools to accomplish this immediate task. Once you have accomplished it, return a clear summary of what you did and the results."
         
-        messages = [
-            {"role": "system", "content": full_system_prompt},
-            {"role": "user", "content": f"Please execute the following task: {step_query}"}
-        ]
+        # Update system prompt for this step
+        execution_history[0]["content"] = full_system_prompt
+        
+        # Add the immediate task as user prompt
+        execution_history.append({"role": "user", "content": f"Please execute the following task: {step_query}"})
         
         max_react_steps = 7
         for _ in range(max_react_steps):
-            response = self.generate(messages, tools=self.agent_tools_schema)
+            response = self.generate(execution_history, tools=self.agent_tools_schema)
             
             if response.tool_calls:
                 assistant_msg = {
@@ -125,7 +129,7 @@ Respond ONLY with a JSON array of strings representing the updated remaining ste
                     "content": response.content,
                     "tool_calls": response.tool_calls
                 }
-                messages.append(assistant_msg)
+                execution_history.append(assistant_msg)
                     
                 for tc in response.tool_calls:
                     tool_name = tc["function"]["name"]
@@ -141,13 +145,15 @@ Respond ONLY with a JSON array of strings representing the updated remaining ste
                         
                     observation = self.call_tool(tool_name, **(tool_args if isinstance(tool_args, dict) else {"query": tool_args}))
                     
-                    messages.append({
+                    execution_history.append({
                         "role": "tool",
                         "tool_call_id": tc["id"],
                         "name": tool_name,
                         "content": observation
                     })
             else:
+                if response.content:
+                    execution_history.append({"role": "assistant", "content": response.content})
                 return response.content or "Completed without text output."
                 
         return "Failed to complete step within internal tool limit."
@@ -167,6 +173,12 @@ Respond ONLY with a JSON array of strings representing the updated remaining ste
             
             completed_steps_log = []
             
+            # Initialize persistent execution history for the whole run
+            live_context = f"\n\n---\n[LIVE SYSTEM CONTEXT]\nYou are running as a local AI agent on the user's machine.\n- Current Date & Time: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n- Current Working Directory: {os.getcwd()}\n---"
+            execution_history = [
+                {"role": "system", "content": self.system_prompt + live_context + f"\n\nYour overarching objective is: {query}"}
+            ]
+            
             max_plan_iterations = 20
             iterations = 0
             
@@ -176,7 +188,7 @@ Respond ONLY with a JSON array of strings representing the updated remaining ste
                 
                 self.log_action("Executing Plan Step", current_step)
                 
-                step_result = self.execute_step(current_step, query)
+                step_result = self.execute_step(current_step, query, execution_history)
                 
                 completed_steps_log.append(f"Task: {current_step}\nResult: {step_result}")
                 
