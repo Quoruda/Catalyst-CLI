@@ -19,17 +19,20 @@ class Engine(BaseAgent):
             delegation_instruction=agent_config.delegation_instruction
         )
         self.system_prompt = agent_config.system_prompt
-        
+
+    @property
+    def agent_tools_schema(self):
         from tools import tools_schema
         allowed_tools = list(self.tools)
         for delegate_name in self.delegates:
             allowed_tools.append(f"delegate_to_{delegate_name}")
             
-        self.agent_tools_schema = []
+        schema_list = []
         for schema in tools_schema:
             name = schema["name"]
             if name in allowed_tools:
-                self.agent_tools_schema.append(schema)
+                schema_list.append(schema)
+        return schema_list
 
     def run(self, query: str, history: List[Dict[str, str]], step_callback: Optional[Callable[[str, str, str], None]] = None) -> str:
         self._step_callback = step_callback
@@ -54,7 +57,7 @@ class Engine(BaseAgent):
             history.append({"role": "user", "content": query})
             messages = list(history)
             
-            max_steps = 10
+            max_steps = 25
             for _ in range(max_steps):
                 self.log_thought("")
                 response = self.generate(messages, tools=self.agent_tools_schema)
