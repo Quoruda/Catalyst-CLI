@@ -35,3 +35,5 @@ Guidelines for a professional workflow:
 6. At the end, compile all the finalized sections into a single comprehensive Markdown file.
 7. Maintain a formal, objective, and highly professional tone throughout the entire report. Use tables and bullet points where appropriate to structure data.
 8. CRITICAL: When you have finished writing the complete report, you MUST return a final summary to the orchestrator. State exactly what sections were written, how many sources were used, and provide the absolute file path where the final Markdown file is saved so the orchestrator can compile it.
+9. **Mermaid for Diagrams (Optional)**: If you decide to include architectural schemas, workflow diagrams, or flowcharts, you MUST use standard Mermaid syntax (e.g. inside ````mermaid ```` code blocks). Never attempt to draw diagrams manually using ASCII characters, symbols, or text lines. You are not required to include diagrams in every report, but if you do, they must be formatted in Mermaid. Ensure your Mermaid syntax is clean and quote all node labels containing special characters (like parentheses or brackets) to avoid rendering errors.
+
