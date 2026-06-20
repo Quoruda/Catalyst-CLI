@@ -71,8 +71,14 @@ class BaseAgent:
         self.log_action(actual_name, json.dumps(kwargs))
         try:
             result = available_tools[actual_name](**kwargs)
-            self.log_observation(actual_name, str(result))
-            return result
+            
+            result_str = str(result)
+            max_chars = 60000
+            if len(result_str) > max_chars:
+                result_str = result_str[:max_chars] + f"\n\n[WARNING: Output truncated because it exceeded {max_chars} characters. The output was too large for the LLM context. Please use more specific tools/commands.]"
+                
+            self.log_observation(actual_name, result_str)
+            return result_str
         except Exception as e:
             err = f"Error: {str(e)}"
             self.log_error(err)
