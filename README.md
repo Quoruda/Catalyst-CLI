@@ -28,6 +28,13 @@ sudo apt install xclip
 sudo apt install wl-clipboard
 ```
 
+### Diagram Generation (Optional)
+To enable the `generate_diagram` tool for generating offline PNG architecture diagrams natively via Mermaid, you must install Node.js and the `mermaid-cli` package globally:
+```bash
+# Requires Node.js and npm
+npm install -g @mermaid-js/mermaid-cli
+```
+
 ## Installation
 
 1. Clone the repository and navigate to the project directory:
