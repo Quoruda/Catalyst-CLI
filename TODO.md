@@ -17,6 +17,7 @@ This document tracks planned features, improvements, and architectural changes f
 - [x] **Persistent Footer**: Keep a persistent footer (status bar) displaying current model, token usage, and active mode.
 - [x] **Better token display**: better display token usage with proper units.
 - [x] **Unified commands**: Compact all slash commands into a unified command system. ex: 'session' for all session management commands with 'list', 'resume', 'delete', 'rename' as subcommands.
+- [ ] **Dynamic line** Resize each agent output area to fill remaining screen space.
 
 ## 🧠 Models & Providers
 - [ ] **Multi-Model Support**: Support switching between model sizes on the fly (e.g., large, medium, small) depending on the task's complexity.
@@ -42,8 +43,11 @@ This document tracks planned features, improvements, and architectural changes f
 - [ ] **Slide Deck Generator**: Tool and Agent to create presentations and slide decks from Markdown.
 - [ ] **Image Search**: Tool and Agent to search for images online.
 - [ ] **Ask Father**: Tool to ask a question and get a response or clarification from the parent agent who delegated the task.
-- [ ] **Bash Agent**: Agent to run bash commands.
-- [ ] **Magic function**: Base utility function to easily use an LLM inside a standard tool. The goal is to create smart, AI-powered tools without the complexity of spawning a full agent.
+- [x] **Bash Agent**: Agent to run bash commands.
+- [x] **Magic function**: Base utility function to easily use an LLM inside a standard tool. The goal is to create smart, AI-powered tools without the complexity of spawning a full agent.
+- [ ] **Tool pack**: Create a package of tools for allow many tool with one function. For exemple : tools for write file, append file, patch file, read file, create folder, etc could be in a package.
+
+
 ## 🧠 Memory & Personalization
 - [ ] **Long-term Memory**: Implement a persistent profile (`memory.json`) for the agent to remember user preferences, name, and project contexts across sessions.
 
