@@ -293,7 +293,7 @@ def main():
         "/help": [],
         "/agent": ["list", "switch"],
         "/tool": ["list"],
-        "/session": ["list", "resume", "new", "rename", "delete"],
+        "/session": ["list", "resume", "new", "rename", "delete", "pop"],
         "/provider": ["list", "switch"]
     }
     completer = SlashCommandCompleter(command_tree)
@@ -323,19 +323,22 @@ def main():
                     active_status.stop()
                     active_status = None
                 if detail:
-                    console.print(f"{indent}│ \\[{agent_name}] [green]Thinking:[/] {detail}")
+                    from rich.markup import escape
+                    console.print(f"{indent}│ \\[{agent_name}] [green]Thinking:[/] {escape(detail)}")
                 else:
                     console.print(f"{indent}│ \\[{agent_name}] [green]Thinking[/]")
         elif step_type == "action":
             if active_status:
                 active_status.stop()
                 active_status = None
-            console.print(f"{indent}│ \\[{agent_name}] [magenta]Action:[/] [bold]{name}[/] [dim]({detail})[/]")
+            from rich.markup import escape
+            console.print(f"{indent}│ \\[{agent_name}] [magenta]Action:[/] [bold]{escape(name)}[/] [dim]({escape(detail)})[/]")
         elif step_type == "error":
             if active_status:
                 active_status.stop()
                 active_status = None
-            console.print(f"{indent}│ \\[{agent_name}] [bold red]Error:[/] {detail}")
+            from rich.markup import escape
+            console.print(f"{indent}│ \\[{agent_name}] [bold red]Error:[/] {escape(detail)}")
         elif step_type == "agent_start":
             if active_status:
                 active_status.stop()
@@ -354,7 +357,8 @@ def main():
             console.print(Panel(Markdown(response), title="[bold green]Final Answer[/bold green]", border_style="green"))
             console.print()
         except Exception as e:
-            console.print(Panel(f"[bold red]Error: {str(e)}[/bold red]", border_style="red"))
+            from rich.markup import escape
+            console.print(Panel(f"[bold red]Error: {escape(str(e))}[/bold red]", border_style="red"))
         finally:
             if active_status:
                 active_status.stop()
@@ -585,7 +589,23 @@ def main():
                                 console.print(f"[red]Session '{target_id}' not found.[/red]")
                             continue
                             
-                    console.print("[yellow]Usage: /session list | /session new | /session resume <id> | /session rename <name> | /session delete <id>[/yellow]")
+                        elif subcmd == "pop":
+                            if not history:
+                                console.print("[yellow]History is already empty.[/yellow]")
+                            else:
+                                removed = 0
+                                if len(history) > 0:
+                                    last_role = history[-1].get("role")
+                                    history.pop()
+                                    removed += 1
+                                    if last_role == "assistant" and len(history) > 0 and history[-1].get("role") == "user":
+                                        history.pop()
+                                        removed += 1
+                                save_session(current_session_id, history, current_agent_name)
+                                console.print(f"[green]Removed the last interaction ({removed} messages) from history.[/green]")
+                            continue
+                            
+                    console.print("[yellow]Usage: /session list | /session new | /session resume <id> | /session rename <name> | /session delete <id> | /session pop[/yellow]")
                     continue
 
                 if cmd == "/help":
@@ -600,6 +620,7 @@ def main():
                         "[bold]/session resume <id>[/bold] - Resume a previous session\n"
                         "[bold]/session rename <name>[/bold] - Rename the current session\n"
                         "[bold]/session delete <id>[/bold] - Delete a session\n"
+                        "[bold]/session pop[/bold] - Remove the last interaction from history\n"
                         "[bold]/provider list[/bold] - List available LLM providers\n"
                         "[bold]/provider switch <name>[/bold] - Switch active LLM provider\n"
                         "[bold]/history[/bold] - View current raw conversation history\n"
@@ -638,7 +659,8 @@ def main():
             console.print("\n[yellow]Exiting Catalyst.[/yellow]")
             break
         except Exception as e:
-            console.print(Panel(f"[bold red]Error: {str(e)}[/bold red]", border_style="red"))
+            from rich.markup import escape
+            console.print(Panel(f"[bold red]Error: {escape(str(e))}[/bold red]", border_style="red"))
 
 if __name__ == "__main__":
     main()
