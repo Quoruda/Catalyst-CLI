@@ -293,7 +293,7 @@ def main():
         "/help": [],
         "/agent": ["list", "switch"],
         "/tool": ["list"],
-        "/session": ["list", "resume", "new", "rename", "delete", "pop"],
+        "/session": ["list", "resume", "new", "rename", "delete", "pop", "clear"],
         "/provider": ["list", "switch"]
     }
     completer = SlashCommandCompleter(command_tree)
@@ -389,9 +389,7 @@ def main():
                 cmd = parts[0].lower()
                 
                 if cmd == "/clear":
-                    history.clear()
-                    save_session(current_session_id, history, current_agent_name)
-                    console.print("[yellow]History cleared.[/yellow]")
+                    console.clear()
                     continue
                     
                 if cmd == "/history":
@@ -605,7 +603,13 @@ def main():
                                 console.print(f"[green]Removed the last interaction ({removed} messages) from history.[/green]")
                             continue
                             
-                    console.print("[yellow]Usage: /session list | /session new | /session resume <id> | /session rename <name> | /session delete <id> | /session pop[/yellow]")
+                        elif subcmd == "clear":
+                            history.clear()
+                            save_session(current_session_id, history, current_agent_name)
+                            console.print("[yellow]Conversation history cleared for this session.[/yellow]")
+                            continue
+                            
+                    console.print("[yellow]Usage: /session list | /session new | /session resume <id> | /session rename <name> | /session delete <id> | /session pop | /session clear[/yellow]")
                     continue
 
                 if cmd == "/help":
@@ -621,10 +625,11 @@ def main():
                         "[bold]/session rename <name>[/bold] - Rename the current session\n"
                         "[bold]/session delete <id>[/bold] - Delete a session\n"
                         "[bold]/session pop[/bold] - Remove the last interaction from history\n"
+                        "[bold]/session clear[/bold] - Clear conversation history for the current session\n"
                         "[bold]/provider list[/bold] - List available LLM providers\n"
                         "[bold]/provider switch <name>[/bold] - Switch active LLM provider\n"
                         "[bold]/history[/bold] - View current raw conversation history\n"
-                        "[bold]/clear[/bold] - Clear conversation history\n"
+                        "[bold]/clear[/bold] - Clear the terminal screen\n"
                         "[bold]/exit[/bold] - Exit Catalyst",
                         title="Help",
                         border_style="cyan"
