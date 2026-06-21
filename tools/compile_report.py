@@ -74,6 +74,9 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
         with open(markdown_filepath, 'r', encoding='utf-8') as f:
             md_content = f.read()
             
+        # Strip the date line at the top during generation (e.g. **Date :** ... or Date : ...)
+        md_content = re.sub(r'^\s*\**Date\s*:\**\s*.*$', '', md_content, flags=re.MULTILINE | re.IGNORECASE)
+            
         # Extract title dynamically from the first H1 in Markdown
         title = "Report"
         title_match = re.search(r'^#\s+(.+)$', md_content, re.MULTILINE)
