@@ -6,6 +6,42 @@ import tempfile
 import subprocess
 import markdown
 
+def add_page_numbers(pdf_path: str):
+    from pypdf import PdfReader, PdfWriter
+    from reportlab.pdfgen import canvas
+    import io
+    
+    reader = PdfReader(pdf_path)
+    writer = PdfWriter()
+    num_pages = len(reader.pages)
+    
+    for page_idx in range(num_pages):
+        page = reader.pages[page_idx]
+        
+        # Get page dimensions dynamically (handles portrait and landscape)
+        width = float(page.mediabox.width)
+        height = float(page.mediabox.height)
+        
+        # Create a temp PDF in memory with the page number
+        packet = io.BytesIO()
+        can = canvas.Canvas(packet, pagesize=(width, height))
+        can.setFont("Helvetica", 8)
+        can.setFillColorRGB(0.5, 0.5, 0.5)  # Subtle gray color
+        text = f"{page_idx + 1} / {num_pages}"
+        # Position page number at bottom center (approx 12mm / 34pt from bottom)
+        can.drawCentredString(width / 2.0, 34, text)
+        can.save()
+        
+        # Overlay the page number onto the original page
+        packet.seek(0)
+        num_reader = PdfReader(packet)
+        num_page = num_reader.pages[0]
+        page.merge_page(num_page)
+        writer.add_page(page)
+        
+    with open(pdf_path, 'wb') as f:
+        writer.write(f)
+
 def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
     if not os.path.exists(markdown_filepath):
         return f"Error: Markdown file not found at {markdown_filepath}"
@@ -21,6 +57,20 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
     os.makedirs(temp_dir, exist_ok=True)
     
     try:
+        # Create a custom CSS file to force dark text/borders on Mermaid diagrams
+        css_theme_path = os.path.join(temp_dir, "mermaid_theme.css")
+        with open(css_theme_path, 'w', encoding='utf-8') as f:
+            f.write("""
+            /* Force dark text and clean strokes for readability in reports */
+            text { fill: #111111 !important; color: #111111 !important; font-family: 'Open Sans', sans-serif !important; }
+            span { color: #111111 !important; font-family: 'Open Sans', sans-serif !important; }
+            .label { color: #111111 !important; }
+            .node rect, .node circle, .node ellipse, .node polygon, .node path { stroke: #222222 !important; stroke-width: 1.5px !important; }
+            .edgePath .path { stroke: #222222 !important; stroke-width: 1.5px !important; }
+            .edgeLabel rect { fill: #ffffff !important; }
+            .cluster rect { fill: #fcfcfc !important; stroke: #bbbbbb !important; }
+            """)
+            
         with open(markdown_filepath, 'r', encoding='utf-8') as f:
             md_content = f.read()
             
@@ -30,11 +80,9 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
         if title_match:
             title = title_match.group(1).strip()
         else:
-            # Fallback to filename formatted nicely
             title = os.path.basename(markdown_filepath).rsplit('.', 1)[0].replace('_', ' ').replace('-', ' ').title()
             
         # Parse and process Mermaid code blocks
-        # Pattern: ```mermaid \n [code] \n ```
         pattern = re.compile(r'```mermaid\s*\n(.*?)\n```', re.DOTALL)
         
         count = 0
@@ -43,7 +91,7 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
             count += 1
             mermaid_code = match.group(1).strip()
             
-            # Write to a temp mmd file in /tmp/catalyst_compile_...
+            # Write to a temp mmd file
             temp_mmd_path = os.path.join(temp_dir, f"diagram_{count}.mmd")
             with open(temp_mmd_path, 'w', encoding='utf-8') as temp_mmd:
                 temp_mmd.write(mermaid_code)
@@ -51,7 +99,7 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
             img_filename = f"diagram_{count}.png"
             img_path = os.path.join(temp_dir, img_filename)
             
-            # Execute mmdc with neutral theme and solid white background for high readability
+            # Execute mmdc with neutral theme, CSS override, and white background
             mmdc_success = False
             error_msg = ""
             
@@ -60,10 +108,10 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
             
             commands_to_try = []
             if os.path.exists(local_bin):
-                commands_to_try.append([local_bin, "-i", temp_mmd_path, "-o", img_path, "-t", "neutral", "-b", "white"])
+                commands_to_try.append([local_bin, "-i", temp_mmd_path, "-o", img_path, "-t", "neutral", "-b", "white", "-C", css_theme_path])
             commands_to_try.extend([
-                ["npx", "-y", "@mermaid-js/mermaid-cli", "-i", temp_mmd_path, "-o", img_path, "-t", "neutral", "-b", "white"],
-                ["mmdc", "-i", temp_mmd_path, "-o", img_path, "-t", "neutral", "-b", "white"]
+                ["npx", "-y", "@mermaid-js/mermaid-cli", "-i", temp_mmd_path, "-o", img_path, "-t", "neutral", "-b", "white", "-C", css_theme_path],
+                ["mmdc", "-i", temp_mmd_path, "-o", img_path, "-t", "neutral", "-b", "white", "-C", css_theme_path]
             ])
             
             for cmd in commands_to_try:
@@ -80,10 +128,8 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
                     error_msg = str(e)
                     
             if mmdc_success:
-                # Return standard markdown image referencing the temp image path (file:// URL so renderers accept it)
                 return f"![Mermaid Diagram {count}](file://{img_path})"
             else:
-                # Fallback to comment
                 return f"<!-- Failed to compile Mermaid Diagram {count}: {error_msg} -->\n{match.group(0)}"
                 
         processed_md = pattern.sub(replace_mermaid, md_content)
@@ -134,7 +180,6 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
             for img in temp_images:
                 shutil.copy(os.path.join(temp_dir, img), os.path.join(output_dir, img))
                 
-            # Replace file:// absolute temp paths with relative paths in HTML
             relative_html = full_html.replace(f"file://{temp_dir}/", "")
             
             with open(output_filepath, 'w', encoding='utf-8') as f:
@@ -143,7 +188,6 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
 
         # If compiling to PDF
         elif output_ext == 'pdf':
-            # Save HTML inside temp dir
             temp_html_path = os.path.join(temp_dir, "report.html")
             with open(temp_html_path, 'w', encoding='utf-8') as f:
                 f.write(full_html)
@@ -161,7 +205,7 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
             except Exception as e:
                 error_details.append(f"WeasyPrint failed: {str(e)}")
                 
-            # Try Headless Chrome/Chromium next if WeasyPrint failed (with no header/footer flag to hide date/time/title)
+            # Try Headless Chrome/Chromium next if WeasyPrint failed
             if not pdf_success:
                 chrome_commands = ["google-chrome", "chromium-browser", "chromium"]
                 for cmd in chrome_commands:
@@ -177,12 +221,14 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
                         error_details.append(f"{cmd} failed: {str(e)}")
                         
             if pdf_success:
-                return f"Success! Beautiful PDF report compiled and saved to: {output_filepath}. Mermaid diagrams were rendered locally."
+                # Dynamically apply page numbers using pypdf and reportlab
+                try:
+                    add_page_numbers(output_filepath)
+                except Exception as pe:
+                    return f"Success! Beautiful PDF report compiled and saved to: {output_filepath}. (Note: page numbering post-processing failed: {pe})"
+                return f"Success! Beautiful PDF report compiled and saved to: {output_filepath}. Mermaid diagrams were rendered locally and page numbers were added."
             else:
-                # Fallback: Save HTML instead and alert user
                 html_fallback = output_filepath.rsplit('.', 1)[0] + ".html"
-                
-                # Copy images to output folder
                 output_dir = os.path.dirname(os.path.abspath(html_fallback))
                 temp_images = [f for f in os.listdir(temp_dir) if f.endswith('.png')]
                 for img in temp_images:
@@ -192,15 +238,14 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
                 with open(html_fallback, 'w', encoding='utf-8') as f:
                     f.write(relative_html)
                 errors_str = " | ".join(error_details)
-                return f"Warning: Failed to compile to PDF ({errors_str}). Saved HTML fallback instead at: {html_fallback}. You can open it in any browser and print to PDF."
+                return f"Warning: Failed to compile to PDF ({errors_str}). Saved HTML fallback instead at: {html_fallback}."
                 
         else:
-            return f"Error: Unsupported output format: .{output_ext}. Supported formats are .html and .pdf."
+            return f"Error: Unsupported output format: .{output_ext}."
             
     except Exception as e:
         return f"Error compiling report: {str(e)}"
     finally:
-        # Always clean up the temp directory
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
 
