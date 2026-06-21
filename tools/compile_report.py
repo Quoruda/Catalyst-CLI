@@ -57,18 +57,49 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
     os.makedirs(temp_dir, exist_ok=True)
     
     try:
-        # Create a custom CSS file to force dark text/borders on Mermaid diagrams
+        # Create a custom CSS file to force dark text/borders on Mermaid diagrams.
+        # We target body, div, span, p, text, and foreignObject elements to override dark-mode defaults.
         css_theme_path = os.path.join(temp_dir, "mermaid_theme.css")
         with open(css_theme_path, 'w', encoding='utf-8') as f:
             f.write("""
             /* Force dark text and clean strokes for readability in reports */
-            text { fill: #111111 !important; color: #111111 !important; font-family: 'Open Sans', sans-serif !important; }
-            span { color: #111111 !important; font-family: 'Open Sans', sans-serif !important; }
-            .label { color: #111111 !important; }
-            .node rect, .node circle, .node ellipse, .node polygon, .node path { stroke: #222222 !important; stroke-width: 1.5px !important; }
-            .edgePath .path { stroke: #222222 !important; stroke-width: 1.5px !important; }
-            .edgeLabel rect { fill: #ffffff !important; }
-            .cluster rect { fill: #fcfcfc !important; stroke: #bbbbbb !important; }
+            body, div, span, p, text, .label, .nodeText, .labelText, .actor, .messageText, .loopText {
+                color: #111111 !important;
+                fill: #111111 !important;
+            }
+            .node rect, .node circle, .node ellipse, .node polygon, .node path {
+                stroke: #222222 !important;
+                stroke-width: 1.5px !important;
+            }
+            .edgePath .path {
+                stroke: #222222 !important;
+                stroke-width: 1.5px !important;
+            }
+            .edgeLabel rect {
+                fill: #ffffff !important;
+            }
+            .cluster rect {
+                fill: #fcfcfc !important;
+                stroke: #bbbbbb !important;
+            }
+            """)
+            
+        # Create a mermaid config file to enforce the default/neutral theme and override color scheme variables
+        config_path = os.path.join(temp_dir, "mermaid_config.json")
+        with open(config_path, 'w', encoding='utf-8') as f:
+            f.write("""
+            {
+              "theme": "neutral",
+              "themeVariables": {
+                "background": "#ffffff",
+                "textColor": "#111111",
+                "nodeTextColor": "#111111",
+                "lineColor": "#222222",
+                "primaryColor": "#f5f5f5",
+                "edgeLabelBackground": "#ffffff"
+              },
+              "themeCSS": "div, span, p, text, .label, .nodeText, .labelText { color: #111111 !important; fill: #111111 !important; } .node rect, .node circle, .node ellipse, .node polygon, .node path { stroke: #222222 !important; } .edgePath .path { stroke: #222222 !important; }"
+            }
             """)
             
         with open(markdown_filepath, 'r', encoding='utf-8') as f:
@@ -102,7 +133,7 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
             img_filename = f"diagram_{count}.png"
             img_path = os.path.join(temp_dir, img_filename)
             
-            # Execute mmdc with neutral theme, CSS override, and white background
+            # Execute mmdc with config, CSS override, and white background
             mmdc_success = False
             error_msg = ""
             
@@ -111,10 +142,10 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
             
             commands_to_try = []
             if os.path.exists(local_bin):
-                commands_to_try.append([local_bin, "-i", temp_mmd_path, "-o", img_path, "-t", "neutral", "-b", "white", "-C", css_theme_path])
+                commands_to_try.append([local_bin, "-i", temp_mmd_path, "-o", img_path, "-b", "white", "-c", config_path, "-C", css_theme_path])
             commands_to_try.extend([
-                ["npx", "-y", "@mermaid-js/mermaid-cli", "-i", temp_mmd_path, "-o", img_path, "-t", "neutral", "-b", "white", "-C", css_theme_path],
-                ["mmdc", "-i", temp_mmd_path, "-o", img_path, "-t", "neutral", "-b", "white", "-C", css_theme_path]
+                ["npx", "-y", "@mermaid-js/mermaid-cli", "-i", temp_mmd_path, "-o", img_path, "-b", "white", "-c", config_path, "-C", css_theme_path],
+                ["mmdc", "-i", temp_mmd_path, "-o", img_path, "-b", "white", "-c", config_path, "-C", css_theme_path]
             ])
             
             for cmd in commands_to_try:
