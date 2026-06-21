@@ -1,0 +1,9 @@
+{
+  "name": "catalyst-cli",
+  "version": "1.0.0",
+  "description": "Multi-agent system supervisor and orchestrator.",
+  "private": true,
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "^10.9.1"
+  }
+}

@@ -10,6 +10,7 @@ tools:
   - patch_file
   - read_pdf
   - generate_context_map
+  - compile_report
 delegates:
   - web_researcher
   - deep_research
