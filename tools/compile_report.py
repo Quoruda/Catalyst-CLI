@@ -24,6 +24,15 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
         with open(markdown_filepath, 'r', encoding='utf-8') as f:
             md_content = f.read()
             
+        # Extract title dynamically from the first H1 in Markdown
+        title = "Report"
+        title_match = re.search(r'^#\s+(.+)$', md_content, re.MULTILINE)
+        if title_match:
+            title = title_match.group(1).strip()
+        else:
+            # Fallback to filename formatted nicely
+            title = os.path.basename(markdown_filepath).rsplit('.', 1)[0].replace('_', ' ').replace('-', ' ').title()
+            
         # Parse and process Mermaid code blocks
         # Pattern: ```mermaid \n [code] \n ```
         pattern = re.compile(r'```mermaid\s*\n(.*?)\n```', re.DOTALL)
@@ -42,7 +51,7 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
             img_filename = f"diagram_{count}.png"
             img_path = os.path.join(temp_dir, img_filename)
             
-            # Execute mmdc. Try local node_modules first, then npx, then global mmdc.
+            # Execute mmdc with neutral theme and solid white background for high readability
             mmdc_success = False
             error_msg = ""
             
@@ -51,10 +60,10 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
             
             commands_to_try = []
             if os.path.exists(local_bin):
-                commands_to_try.append([local_bin, "-i", temp_mmd_path, "-o", img_path, "-b", "transparent"])
+                commands_to_try.append([local_bin, "-i", temp_mmd_path, "-o", img_path, "-t", "neutral", "-b", "white"])
             commands_to_try.extend([
-                ["npx", "-y", "@mermaid-js/mermaid-cli", "-i", temp_mmd_path, "-o", img_path, "-b", "transparent"],
-                ["mmdc", "-i", temp_mmd_path, "-o", img_path, "-b", "transparent"]
+                ["npx", "-y", "@mermaid-js/mermaid-cli", "-i", temp_mmd_path, "-o", img_path, "-t", "neutral", "-b", "white"],
+                ["mmdc", "-i", temp_mmd_path, "-o", img_path, "-t", "neutral", "-b", "white"]
             ])
             
             for cmd in commands_to_try:
@@ -90,7 +99,7 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
             h1 { font-size: 2.5em; text-align: center; margin-bottom: 1em; }
             h2 { font-size: 1.8em; margin-top: 1.5em; }
             p { margin-bottom: 1.2em; text-align: justify; }
-            img { max-width: 100%; height: auto; display: block; margin: 1.5em auto; }
+            img { max-width: 100%; height: auto; display: block; margin: 1.5em auto; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
             table { width: 100%; border-collapse: collapse; margin: 2em 0; }
             th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
             th { background-color: #f5f5f5; font-weight: 600; }
@@ -108,7 +117,7 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Professional Report</title>
+    <title>{title}</title>
     {css}
 </head>
 <body>
@@ -152,12 +161,12 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
             except Exception as e:
                 error_details.append(f"WeasyPrint failed: {str(e)}")
                 
-            # Try Headless Chrome/Chromium next if WeasyPrint failed
+            # Try Headless Chrome/Chromium next if WeasyPrint failed (with no header/footer flag to hide date/time/title)
             if not pdf_success:
                 chrome_commands = ["google-chrome", "chromium-browser", "chromium"]
                 for cmd in chrome_commands:
                     try:
-                        exec_cmd = [cmd, "--headless", "--disable-gpu", "--no-sandbox", f"--print-to-pdf={output_filepath}", temp_html_path]
+                        exec_cmd = [cmd, "--headless", "--disable-gpu", "--no-sandbox", "--no-pdf-header-footer", f"--print-to-pdf={output_filepath}", temp_html_path]
                         result = subprocess.run(exec_cmd, capture_output=True, text=True)
                         if result.returncode == 0:
                             pdf_success = True
