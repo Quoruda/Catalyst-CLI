@@ -43,6 +43,7 @@ This document tracks planned features, improvements, and architectural changes f
 - [ ] **Slide Deck Generator**: Tool and Agent to create presentations and slide decks from Markdown.
 - [ ] **Image Search**: Tool and Agent to search for images online.
 - [ ] **Ask Father**: Tool to ask a question and get a response or clarification from the parent agent who delegated the task.
+- [ ] **Increase Search Tool** Can view images and other document in a research.
 - [x] **Bash Agent**: Agent to run bash commands.
 - [x] **Magic function**: Base utility function to easily use an LLM inside a standard tool. The goal is to create smart, AI-powered tools without the complexity of spawning a full agent.
 - [ ] **Tool pack**: Create a package of tools for allow many tool with one function. For exemple : tools for write file, append file, patch file, read file, create folder, etc could be in a package.

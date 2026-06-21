@@ -195,7 +195,7 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
                 
         processed_md = pattern.sub(replace_mermaid, md_content)
         
-        # Convert processed Markdown to HTML
+        # Convert processed Markdown to HTML (using the 'toc' extension)
         html_body = markdown.markdown(processed_md, extensions=['tables', 'fenced_code', 'toc'])
         
         css = """
@@ -212,6 +212,32 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
             th { background-color: #f5f5f5; font-weight: 600; }
             tr:nth-child(even) { background-color: #fafafa; }
             blockquote { border-left: 4px solid #ccc; margin: 1.5em 0; padding-left: 1em; font-style: italic; color: #555; }
+            
+            /* Table of Contents Styling */
+            .toc {
+                background-color: #f9f9f9;
+                border: 1px solid #e0e0e0;
+                border-radius: 6px;
+                padding: 20px;
+                margin: 2em 0;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                page-break-after: always;
+            }
+            .toc ul {
+                list-style-type: none;
+                padding-left: 20px;
+            }
+            .toc ul li {
+                margin-bottom: 0.5em;
+            }
+            .toc a {
+                color: #1a73e8;
+                text-decoration: none;
+            }
+            .toc a:hover {
+                text-decoration: underline;
+            }
+            
             @media print {
                 body { padding: 0; background-color: #fff; }
                 h1, h2 { page-break-after: avoid; }
@@ -241,15 +267,12 @@ def compile_report(markdown_filepath: str, output_filepath: str = None) -> str:
             for img in temp_images:
                 shutil.copy(os.path.join(temp_dir, img), os.path.join(output_dir, img))
                 
-            # Convert file:// absolute paths of local images back to relative paths in the HTML output.
-            # This makes the HTML document self-contained and portable.
+            # Convert file:// absolute paths back to relative references
             def make_path_relative(match):
                 path = match.group(1)
                 if path.startswith(temp_dir):
-                    # Temp files are copied to the same directory, reference by filename only
                     filename = os.path.basename(path)
                     return f'src="{filename}"'
-                # Compute relative path from output_dir to the local image file
                 rel_path = os.path.relpath(path, output_dir)
                 return f'src="{rel_path}"'
                 
