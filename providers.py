@@ -3,7 +3,7 @@ from typing import Dict, Any, List, Optional
 import json
 import litellm
 from litellm import completion
-from config import AgentConfig
+from models import AgentConfig
 
 litellm.telemetry = False
 

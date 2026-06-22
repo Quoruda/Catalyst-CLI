@@ -204,11 +204,12 @@ def main():
         providers = user_config.get("providers", {})
         if provider_name in providers:
             cfg = providers[provider_name]
-            os.environ["LLM_PROVIDER"] = cfg.get("provider", "")
-            os.environ["LLM_MODEL"] = cfg.get("model", "")
-            if cfg.get("api_base"): os.environ["LLM_API_BASE"] = cfg["api_base"]
-            if cfg.get("api_key"): os.environ["LLM_API_KEY"] = cfg["api_key"]
-            if "temperature" in cfg: os.environ["LLM_TEMPERATURE"] = str(cfg["temperature"])
+            from config import active_config
+            active_config.provider = cfg.get("provider", "")
+            active_config.model = cfg.get("model", "")
+            active_config.api_base = cfg.get("api_base") or None
+            active_config.api_key = cfg.get("api_key") or None
+            active_config.temperature = float(cfg.get("temperature", 0.0))
             
             from discovery import available_agents
             for agent in available_agents.values():

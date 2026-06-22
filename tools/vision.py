@@ -22,8 +22,9 @@ def view_image(filepath: str, prompt: str = "Describe this image in detail.") ->
         with open(filepath, "rb") as f:
             base64_data = base64.b64encode(f.read()).decode("utf-8")
             
-        model = os.getenv("LLM_MODEL", "gemini-1.5-flash")
-        provider = os.getenv("LLM_PROVIDER", "gemini").lower()
+        from config import active_config
+        model = active_config.model
+        provider = active_config.provider.lower()
         if provider and "/" not in model:
             model = f"{provider}/{model}"
             
@@ -45,11 +46,11 @@ def view_image(filepath: str, prompt: str = "Describe this image in detail.") ->
             ]
         }
         
-        api_key = os.getenv("LLM_API_KEY")
+        api_key = active_config.api_key
         if api_key:
             kwargs["api_key"] = api_key
             
-        api_base = os.getenv("LLM_API_BASE")
+        api_base = active_config.api_base
         if api_base:
             kwargs["api_base"] = api_base
             

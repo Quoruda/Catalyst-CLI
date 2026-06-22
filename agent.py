@@ -1,18 +1,11 @@
 import os
 from typing import Dict, Any, List, Optional, Callable
-from config import AgentConfig
+from config import AgentConfig, active_config
 from providers import LLMProvider, LiteLLMProvider, LLMResponse
 
 class CatalystAgent:
     def __init__(self):
-            
-        self.config = AgentConfig(
-            provider=os.getenv("LLM_PROVIDER", "ollama").lower(),
-            model=os.getenv("LLM_MODEL", "mistral:latest"),
-            temperature=float(os.getenv("LLM_TEMPERATURE", "0.0")),
-            api_base=os.getenv("LLM_API_BASE"),
-            api_key=os.getenv("LLM_API_KEY")
-        )
+        self.config = active_config.model_copy()
         
         self.provider = self._init_provider()
 

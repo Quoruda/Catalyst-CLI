@@ -1,9 +1,12 @@
-from typing import Optional
-from pydantic import BaseModel, Field
+import os
+from models import AgentConfig
 
-class AgentConfig(BaseModel):
-    provider: str
-    model: str
-    temperature: float = Field(default=0.0, ge=0.0, le=2.0)
-    api_base: Optional[str] = None
-    api_key: Optional[str] = None
+# Global in-memory configuration, initialized with environment variables as a fallback
+active_config = AgentConfig(
+    provider=os.getenv("LLM_PROVIDER", "ollama").lower(),
+    model=os.getenv("LLM_MODEL", "mistral:latest"),
+    temperature=float(os.getenv("LLM_TEMPERATURE", "0.0")),
+    api_base=os.getenv("LLM_API_BASE") or None,
+    api_key=os.getenv("LLM_API_KEY") or None
+)
+
