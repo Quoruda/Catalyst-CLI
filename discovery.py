@@ -3,6 +3,16 @@ import sys
 import importlib.util
 import contextvars
 
+class Skill:
+    def __init__(self, name: str, description: str, tools: list[str], directives: str):
+        self.name = name
+        self.description = description
+        self.tools = tools
+        self.directives = directives
+
+    def __repr__(self):
+        return f"<Skill name={self.name} tools={self.tools}>"
+
 class Agent:
     def __init__(self, name: str, description: str, engine: str, tools: list[str], system_prompt: str, delegates: list[str] = None, delegation_instruction: str = ""):
         self.name = name
@@ -23,6 +33,7 @@ active_agent_name = contextvars.ContextVar("active_agent_name", default="catalys
 available_tools = {}
 tools_schema = []
 
+available_skills = {}
 available_agents = {}
 available_engines = {}
 
@@ -268,7 +279,64 @@ def generate_delegation_tools():
         }
         tools_schema.append(schema)
 
+def load_skills():
+    available_skills.clear()
+    paths = get_resolution_paths("skills")
+    
+    for directory, _ in paths:
+        if not os.path.exists(directory):
+            continue
+            
+        for filename in os.listdir(directory):
+            if not filename.endswith(".md"):
+                continue
+            filepath = os.path.join(directory, filename)
+            try:
+                config = parse_agent_markdown(filepath)
+                name = config.get("name")
+                if not name:
+                    name = os.path.splitext(filename)[0]
+                    
+                if name in available_skills:
+                    raise ValueError(f"Duplicate skill registration detected: '{name}' in '{filepath}'")
+                    
+                tools_list = config.get("tools", [])
+                if isinstance(tools_list, str):
+                    tools_list = [tools_list] if tools_list else []
+                    
+                skill = Skill(
+                    name=name,
+                    description=config.get("description", "No description provided."),
+                    tools=tools_list,
+                    directives=config.get("system_prompt", "")
+                )
+                available_skills[name] = skill
+            except Exception as e:
+                if isinstance(e, ValueError):
+                    raise e
+
+def resolve_skills(skill_names: list[str]) -> tuple[list[str], str]:
+    """Resolve a list of skill names into a flat list of tool names and combined directives text."""
+    resolved_tools = []
+    directives_parts = []
+    seen_tools = set()
+    
+    for skill_name in skill_names:
+        skill = available_skills.get(skill_name)
+        if not skill:
+            continue
+        for tool_name in skill.tools:
+            if tool_name not in seen_tools:
+                resolved_tools.append(tool_name)
+                seen_tools.add(tool_name)
+        if skill.directives:
+            directives_parts.append(f"## Skill: {skill.name}\n{skill.directives}")
+            
+    combined_directives = "\n\n".join(directives_parts)
+    return resolved_tools, combined_directives
+
 load_tools()
 load_engines()
+load_skills()
 load_agents()
 generate_delegation_tools()
