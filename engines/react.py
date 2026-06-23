@@ -7,6 +7,7 @@ from typing import Dict, Any, List, Optional, Callable
 from agent import BaseAgent
 
 ENGINE_NAME = "ReAct"
+ENGINE_DESCRIPTION = "Boucle conversationnelle Thought → Action → Observation. Idéal pour les tâches courtes, interactives, ou les questions-réponses nécessitant quelques appels d'outils."
 
 class Engine(BaseAgent):
     def __init__(self, agent_config):

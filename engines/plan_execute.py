@@ -7,6 +7,7 @@ from typing import Dict, Any, List, Optional, Callable
 from agent import BaseAgent
 
 ENGINE_NAME = "PlanExecute"
+ENGINE_DESCRIPTION = "Génère un plan multi-étapes puis exécute chaque étape séquentiellement avec replanning. Idéal pour les tâches complexes nécessitant plusieurs outils enchaînés (refactoring, rédaction de rapports, analyses de projet)."
 
 class Engine(BaseAgent):
     def __init__(self, agent_config):

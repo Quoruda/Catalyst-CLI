@@ -1,7 +1,7 @@
 from providers import LiteLLMProvider
 from config import AgentConfig, active_config
 
-def ask_llm(system_prompt: str, user_prompt: str, temperature: float = 0.0) -> str:
+def ask_llm(system_prompt: str, user_prompt: str, temperature: float = 0.0, response_format: dict = None) -> str:
     """
     Magic function: A base utility to easily use the configured LLM inside any standard Python tool.
     This allows creating smart, AI-powered tools without the complexity and overhead of spawning a full agent.
@@ -16,7 +16,7 @@ def ask_llm(system_prompt: str, user_prompt: str, temperature: float = 0.0) -> s
     ]
     
     try:
-        response = llm.generate(messages)
+        response = llm.generate(messages, response_format=response_format)
         return response.content
     except Exception as e:
         return f"Magic function LLM error: {str(e)}"

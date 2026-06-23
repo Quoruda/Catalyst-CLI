@@ -1,3 +1,4 @@
+import json
 from typing import Dict, Any, List, Optional, Callable
 from agent import BaseAgent
 
@@ -6,7 +7,7 @@ class MetamorphAgent(BaseAgent):
     def __init__(self):
         super().__init__(
             name="metamorph",
-            description="Adaptive agent that dynamically selects skills and tools based on each user request. Empty shell for now.",
+            description="Adaptive agent that dynamically selects skills and engine based on each user request.",
             delegation_instruction="Provide a clear task description. The metamorph agent will autonomously select the appropriate skills and tools."
         )
         self._active_skills = []
@@ -30,17 +31,88 @@ class MetamorphAgent(BaseAgent):
         from discovery import tools_schema
         return [s for s in tools_schema if s["name"] in self._active_tool_names]
 
+    def route(self, query: str) -> dict:
+        """CALL 1 — Lightweight LLM router to classify intent and select engine + skills."""
+        from discovery import available_skills, available_engines, engine_descriptions
+        from magic import ask_llm
+
+        skills_block = "\n".join(
+            f"- {name}: {skill.description}" for name, skill in available_skills.items()
+        )
+        engines_block = "\n".join(
+            f"- {name}: {desc}" for name, desc in engine_descriptions.items()
+        )
+
+        system_prompt = (
+            "You are a routing classifier. Your sole job is to analyze the user's request "
+            "and select the most appropriate engine and skills from the lists below.\n"
+            "Select between 1 and 4 skills maximum. Choose the single best engine.\n\n"
+            f"Available engines:\n{engines_block}\n\n"
+            f"Available skills:\n{skills_block}\n\n"
+            "Respond ONLY with a JSON object: {\"engine\": \"engine_name\", \"skills\": [\"skill1\", \"skill2\"]}"
+        )
+
+        try:
+            raw = ask_llm(
+                system_prompt=system_prompt,
+                user_prompt=query,
+                temperature=0.0,
+                response_format={"type": "json_object"}
+            )
+            data = json.loads(raw)
+        except (json.JSONDecodeError, TypeError):
+            return {"engine": "react", "skills": list(available_skills.keys())}
+
+        # Validate engine against registry
+        engine = data.get("engine", "react")
+        if engine.lower() not in available_engines:
+            engine = "react"
+
+        # Validate skills against registry, drop unknowns
+        skills = [s for s in data.get("skills", []) if s in available_skills]
+        if not skills:
+            skills = list(available_skills.keys())
+
+        return {"engine": engine.lower(), "skills": skills}
+
     def run(self, query: str, history: List[Dict[str, str]], step_callback: Optional[Callable[[str, str, str], None]] = None) -> str:
         self._step_callback = step_callback
-        from discovery import active_agent_name
-        token_agent = active_agent_name.set(self.name)
+        from discovery import available_engines, active_agent_name, Agent
 
+        token_agent = active_agent_name.set(self.name)
         try:
             if step_callback:
                 step_callback("agent_start", self.name, query)
 
-            # TODO: Implement skill routing + LLM execution loop
-            result = f"[Metamorph] Shell active. No LLM wired yet.\nAvailable skills: {list(self.get_available_skills().keys())}\nActive skills: {self._active_skills}\nActive tools: {self._active_tool_names}\nActive directives:\n{self._active_directives}"
+            # === CALL 1: Route ===
+            self.log_thought("Routing request to select engine and skills...")
+            decision = self.route(query)
+            engine_name = decision["engine"]
+            skill_names = decision["skills"]
+
+            self.log_thought(f"Router decision → engine={engine_name}, skills={skill_names}")
+
+            # Load the selected skills to resolve tools and directives
+            self.load_skills(skill_names)
+
+            # === CALL 2: Build and run the real agent with a fresh context ===
+            engine_class = available_engines.get(engine_name)
+            if not engine_class:
+                engine_class = available_engines.get("react")
+
+            # Fabricate a temporary agent config with the resolved context
+            agent_config = Agent(
+                name="metamorph_worker",
+                description="Dynamic worker spawned by the metamorph agent.",
+                engine=engine_name,
+                tools=self._active_tool_names,
+                system_prompt=self._active_directives,
+                delegates=[],
+                delegation_instruction=""
+            )
+
+            worker = engine_class(agent_config)
+            result = worker.run(query, history=[], step_callback=step_callback)
 
             if step_callback:
                 step_callback("agent_done", self.name, "")

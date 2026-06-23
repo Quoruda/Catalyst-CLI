@@ -36,6 +36,7 @@ tools_schema = []
 available_skills = {}
 available_agents = {}
 available_engines = {}
+engine_descriptions = {}
 
 def get_resolution_paths(subdir_name: str) -> list[tuple[str, str]]:
     project_root = os.path.dirname(os.path.abspath(__file__))
@@ -98,6 +99,7 @@ def load_tools():
 
 def load_engines():
     available_engines.clear()
+    engine_descriptions.clear()
     paths = get_resolution_paths("engines")
     
     for directory, package_name in paths:
@@ -119,7 +121,9 @@ def load_engines():
                         engine_class = getattr(module, "Engine", None)
                         if engine_class:
                             engine_name = getattr(module, "ENGINE_NAME", module_name)
+                            engine_desc = getattr(module, "ENGINE_DESCRIPTION", "")
                             available_engines[engine_name.lower()] = engine_class
+                            engine_descriptions[engine_name.lower()] = engine_desc
                     except Exception:
                         pass
 
