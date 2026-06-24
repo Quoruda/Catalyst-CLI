@@ -243,7 +243,10 @@ def load_agents():
                         pass
 
 def generate_delegation_tools():
-    for agent_name, agent_obj in list(available_agents.items()):
+    for agent_name, agent_obj in available_agents.items():
+        if agent_name in ["metamorph", "catalyst"]:
+            continue
+        
         tool_name = f"delegate_to_{agent_name}"
         if tool_name in available_tools:
             continue
