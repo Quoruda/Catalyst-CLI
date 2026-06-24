@@ -292,7 +292,7 @@ def main():
     elif saved_agent and saved_agent in available_agents:
         current_agent_name = saved_agent
     else:
-        current_agent_name = "supervisor" if "supervisor" in available_agents else list(available_agents.keys())[0]
+        current_agent_name = "metamorph" if "metamorph" in available_agents else list(available_agents.keys())[0]
     
     try:
         react_agent = available_agents[current_agent_name]
@@ -398,6 +398,13 @@ def main():
                     console.print(f"{indent}│ \\[{agent_name}] [green]Thinking:[/] {escape(clean_detail)}", overflow="ellipsis", no_wrap=True)
                 else:
                     console.print(f"{indent}│ \\[{agent_name}] [green]Thinking[/]", overflow="ellipsis", no_wrap=True)
+        elif step_type == "route":
+            if active_status:
+                active_status.stop()
+                active_status = None
+            from rich.markup import escape
+            clean_detail = detail.replace('\n', ' ') if detail else ""
+            console.print(f"{indent}│ \\[{agent_name}] [cyan]Route:[/] {escape(clean_detail)}", overflow="ellipsis", no_wrap=True)
         elif step_type == "action":
             if active_status:
                 active_status.stop()

@@ -104,12 +104,14 @@ class MetamorphAgent(BaseAgent):
                 step_callback("agent_start", self.name, query)
 
             # === CALL 1: Route ===
-            self.log_thought("Phase 1 - Routing: Analyzing request to select engine and skills...")
+            if step_callback:
+                step_callback("route", self.name, "Analyzing request...")
             decision = self.route(query, history=history)
             engine_name = decision["engine"]
             skill_names = decision["skills"]
 
-            self.log_thought(f"Router decision → engine={engine_name}, skills={skill_names}")
+            if step_callback:
+                step_callback("route", self.name, f"engine={engine_name}, skills={skill_names}")
 
             # Load the selected skills to resolve tools and directives
             self.load_skills(skill_names)
@@ -129,8 +131,6 @@ class MetamorphAgent(BaseAgent):
                 delegates=[],
                 delegation_instruction=""
             )
-
-            self.log_thought("Phase 2 - Execution: Starting worker engine...")
             
             def inner_step_callback(s_type, s_name, s_detail):
                 if s_type in ("agent_start", "agent_done"):
