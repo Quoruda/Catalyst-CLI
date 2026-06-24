@@ -394,21 +394,24 @@ def main():
                     active_status = None
                 if detail:
                     from rich.markup import escape
-                    console.print(f"{indent}│ \\[{agent_name}] [green]Thinking:[/] {escape(detail)}")
+                    clean_detail = detail.replace('\n', ' ')
+                    console.print(f"{indent}│ \\[{agent_name}] [green]Thinking:[/] {escape(clean_detail)}", overflow="ellipsis", no_wrap=True)
                 else:
-                    console.print(f"{indent}│ \\[{agent_name}] [green]Thinking[/]")
+                    console.print(f"{indent}│ \\[{agent_name}] [green]Thinking[/]", overflow="ellipsis", no_wrap=True)
         elif step_type == "action":
             if active_status:
                 active_status.stop()
                 active_status = None
             from rich.markup import escape
-            console.print(f"{indent}│ \\[{agent_name}] [magenta]Action:[/] [bold]{escape(name)}[/] [dim]({escape(detail)})[/]")
+            clean_detail = detail.replace('\n', ' ') if detail else ""
+            console.print(f"{indent}│ \\[{agent_name}] [magenta]Action:[/] [bold]{escape(name)}[/] [dim]({escape(clean_detail)})[/]", overflow="ellipsis", no_wrap=True)
         elif step_type == "error":
             if active_status:
                 active_status.stop()
                 active_status = None
             from rich.markup import escape
-            console.print(f"{indent}│ \\[{agent_name}] [bold red]Error:[/] {escape(detail)}")
+            clean_detail = detail.replace('\n', ' ') if detail else ""
+            console.print(f"{indent}│ \\[{agent_name}] [bold red]Error:[/] {escape(clean_detail)}", overflow="ellipsis", no_wrap=True)
         elif step_type == "agent_start":
             if active_status:
                 active_status.stop()
