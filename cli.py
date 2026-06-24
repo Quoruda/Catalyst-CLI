@@ -177,6 +177,7 @@ def main():
     parser = argparse.ArgumentParser(description="Catalyst CLI")
     parser.add_argument("-m", "--message", type=str, help="Quickly send a message and get a response without entering interactive mode.")
     parser.add_argument("-a", "--agent", type=str, help="Specify the agent to use.")
+    parser.add_argument("-s", "--session", type=str, help="Specify a session ID to resume.")
     parser.add_argument("--sessions", action="store_true", help="List all saved sessions and exit.")
     parser.add_argument("--agents", action="store_true", help="List all registered agents and exit.")
     parser.add_argument("--tools", action="store_true", help="List all registered tools and exit.")
@@ -291,12 +292,26 @@ def main():
         console.print(f"[bold cyan]{ascii_art}[/bold cyan]")
         console.print("[dim]Interactive Supervisor Agent (ReAct Mode)[/dim]\n")
     
-    # Force une nouvelle session vierge à chaque démarrage
-    current_session_id = create_new_session()
-    session_locker.lock(current_session_id)
-    user_config["current_session_id"] = current_session_id
-    save_user_config(user_config)
-    history = []
+    if parsed_args.session:
+        target_id = parsed_args.session
+        if not session_locker.lock(target_id):
+            console.print(f"[bold red]Session '{target_id}' is currently in use by another terminal.[/bold red]")
+            sys.exit(1)
+        loaded_history = load_session(target_id)
+        if loaded_history or os.path.exists(get_session_path(target_id)):
+            current_session_id = target_id
+            history = loaded_history
+            user_config["current_session_id"] = current_session_id
+            save_user_config(user_config)
+        else:
+            console.print(f"[red]Session '{target_id}' not found.[/red]")
+            sys.exit(1)
+    else:
+        current_session_id = create_new_session()
+        session_locker.lock(current_session_id)
+        user_config["current_session_id"] = current_session_id
+        save_user_config(user_config)
+        history = []
     
     def format_tokens(num: int) -> str:
         if num >= 1_000_000:
@@ -396,7 +411,8 @@ def main():
     if parsed_args.message:
         console.print()
         try:
-            response = react_agent.run(parsed_args.message, [], step_callback=step_callback)
+            response = react_agent.run(parsed_args.message, history, step_callback=step_callback)
+            save_session(current_session_id, history, current_agent_name)
             console.print(Panel(Markdown(response), title="[bold green]Final Answer[/bold green]", border_style="green"))
             console.print()
         except Exception as e:
