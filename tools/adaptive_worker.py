@@ -26,10 +26,10 @@ schema = {
 }
 
 def spawn_adaptive_worker(query: str, directives: str = "") -> str:
-    """Delegates a task to the supervisor agent acting as an adaptive worker."""
-    supervisor_agent = available_agents.get("supervisor")
-    if not supervisor_agent:
-        return "Error: supervisor agent is not available."
+    """Delegates a task to the metamorph agent acting as an adaptive worker."""
+    metamorph_agent = available_agents.get("metamorph")
+    if not metamorph_agent:
+        return "Error: metamorph agent is not available."
 
     current_level = nesting_level.get()
     
@@ -45,7 +45,7 @@ def spawn_adaptive_worker(query: str, directives: str = "") -> str:
         if directives:
             query = f"[PERSONA DIRECTIVE: {directives}]\n\n{query}"
             
-        result = supervisor_agent.run(query, history=[], step_callback=cb)
+        result = metamorph_agent.run(query, history=[], step_callback=cb)
         return result
     except Exception as e:
         return f"Worker execution failed: {str(e)}"
