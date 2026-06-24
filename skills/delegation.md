@@ -1,11 +1,10 @@
 ---
 name: delegation
-description: "Capacité à paralléliser ou isoler des tâches complexes en déléguant à des sous-travailleurs adaptatifs."
+description: "Capacité à déléguer des tâches complexes ou isolées à des sous-travailleurs dynamiques pour exécuter des actions en parallèle ou segmenter les problèmes."
 tools:
   - delegate_to_adaptive_worker
 ---
-1. Si tu reçois une tâche extrêmement complexe ou qui nécessite de mélanger plusieurs domaines d'expertise différents, utilise `delegate_to_adaptive_worker`.
-2. Utilise cet outil pour créer un contexte propre (isoler la mémoire et les outils) pour une sous-tâche spécifique.
-3. Remplis le champ `query` avec une instruction très détaillée et complète. Le sous-travailleur n'a pas accès à ton historique, tu dois tout lui expliquer.
-4. Utilise le champ `directives` si tu souhaites imposer une posture stricte au sous-travailleur (ex: "Agis comme un expert Git très strict").
-5. Ne délègue pas les tâches simples (comme lire un fichier ou chercher sur le web) que tu peux faire toi-même en utilisant d'autres skills.
+1. Si la tâche qui t'est confiée est très complexe (ex: "code une app web complète", "fais des recherches et crée un repo git"), ne tente pas de tout faire toi-même dans la même session.
+2. Utilise `delegate_to_adaptive_worker` pour créer des sous-travailleurs (sub-workers) qui s'occuperont d'une partie spécifique du problème.
+3. Sois très précis dans le paramètre `query` : donne tout le contexte nécessaire au sous-travailleur et précise où il doit sauvegarder son travail.
+4. N'hésite pas à utiliser le paramètre `directives` pour forcer le sous-travailleur à adopter un rôle très précis (ex: "Agis comme un développeur senior très strict").
