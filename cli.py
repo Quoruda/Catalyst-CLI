@@ -262,12 +262,37 @@ def main():
                 console.print(f"[bold green]{schema['name']}[/bold green] - {desc}")
         sys.exit(0)
 
+    target_session_id = None
+    loaded_history = []
+    session_agent = None
+
+    if parsed_args.session:
+        target_session_id = parsed_args.session
+        if not session_locker.lock(target_session_id):
+            console.print(f"[bold red]Session '{target_session_id}' is currently in use by another terminal.[/bold red]")
+            sys.exit(1)
+        
+        path = get_session_path(target_session_id)
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    loaded_history = data.get("history", [])
+                    session_agent = data.get("agent")
+            except Exception:
+                pass
+        else:
+            console.print(f"[red]Session '{target_session_id}' not found.[/red]")
+            sys.exit(1)
+
     saved_agent = user_config.get("default_agent")
     if parsed_args.agent:
         if parsed_args.agent not in available_agents:
             console.print(Panel(f"[bold red]Error: Agent '{parsed_args.agent}' not found. Registered agents: {', '.join(available_agents.keys())}[/bold red]", title="Error"))
             sys.exit(1)
         current_agent_name = parsed_args.agent
+    elif session_agent and session_agent in available_agents:
+        current_agent_name = session_agent
     elif saved_agent and saved_agent in available_agents:
         current_agent_name = saved_agent
     else:
@@ -292,20 +317,11 @@ def main():
         console.print(f"[bold cyan]{ascii_art}[/bold cyan]")
         console.print("[dim]Interactive Supervisor Agent (ReAct Mode)[/dim]\n")
     
-    if parsed_args.session:
-        target_id = parsed_args.session
-        if not session_locker.lock(target_id):
-            console.print(f"[bold red]Session '{target_id}' is currently in use by another terminal.[/bold red]")
-            sys.exit(1)
-        loaded_history = load_session(target_id)
-        if loaded_history or os.path.exists(get_session_path(target_id)):
-            current_session_id = target_id
-            history = loaded_history
-            user_config["current_session_id"] = current_session_id
-            save_user_config(user_config)
-        else:
-            console.print(f"[red]Session '{target_id}' not found.[/red]")
-            sys.exit(1)
+    if target_session_id:
+        current_session_id = target_session_id
+        history = loaded_history
+        user_config["current_session_id"] = current_session_id
+        save_user_config(user_config)
     else:
         current_session_id = create_new_session()
         session_locker.lock(current_session_id)

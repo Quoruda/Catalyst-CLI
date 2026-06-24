@@ -31,7 +31,7 @@ class MetamorphAgent(BaseAgent):
         from discovery import tools_schema
         return [s for s in tools_schema if s["name"] in self._active_tool_names]
 
-    def route(self, query: str) -> dict:
+    def route(self, query: str, history: List[Dict[str, str]] = None) -> dict:
         """CALL 1 — Lightweight LLM router to classify intent and select engine + skills."""
         from discovery import available_skills, available_engines, engine_descriptions
         from magic import ask_llm
@@ -43,12 +43,21 @@ class MetamorphAgent(BaseAgent):
             f"- {name}: {desc}" for name, desc in engine_descriptions.items()
         )
 
+        history_context = ""
+        if history:
+            history_context = "Recent conversation context:\n"
+            for msg in history[-3:]: # Limit to last 3 messages for context
+                role = msg.get("role", "unknown")
+                content = msg.get("content", "")
+                history_context += f"{role}: {content}\n"
+
         system_prompt = (
             "You are a routing classifier. Your sole job is to analyze the user's request "
             "and select the most appropriate engine and skills from the lists below.\n"
             "Select between 1 and 4 skills maximum. Choose the single best engine.\n\n"
             f"Available engines:\n{engines_block}\n\n"
             f"Available skills:\n{skills_block}\n\n"
+            f"{history_context}\n"
             "Respond ONLY with a JSON object: {\"engine\": \"engine_name\", \"skills\": [\"skill1\", \"skill2\"]}"
         )
 
@@ -94,7 +103,7 @@ class MetamorphAgent(BaseAgent):
 
             # === CALL 1: Route ===
             self.log_thought("Routing request to select engine and skills...")
-            decision = self.route(query)
+            decision = self.route(query, history=history)
             engine_name = decision["engine"]
             skill_names = decision["skills"]
 
@@ -120,7 +129,7 @@ class MetamorphAgent(BaseAgent):
             )
 
             worker = engine_class(agent_config)
-            result = worker.run(query, history=[], step_callback=step_callback)
+            result = worker.run(query, history=history, step_callback=step_callback)
 
             if step_callback:
                 step_callback("agent_done", self.name, "")
