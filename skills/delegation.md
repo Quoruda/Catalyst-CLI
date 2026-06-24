@@ -1,10 +1,10 @@
 ---
 name: delegation
-description: "Capacité à déléguer des tâches complexes ou isolées à des sous-travailleurs dynamiques pour exécuter des actions en parallèle ou segmenter les problèmes."
+description: "Délégation de tâches complexes ou parallèles à des sous-travailleurs adaptatifs."
 tools:
   - delegate_to_adaptive_worker
 ---
-1. Si la tâche qui t'est confiée est très complexe (ex: "code une app web complète", "fais des recherches et crée un repo git"), ne tente pas de tout faire toi-même dans la même session.
-2. Utilise `delegate_to_adaptive_worker` pour créer des sous-travailleurs (sub-workers) qui s'occuperont d'une partie spécifique du problème.
-3. Sois très précis dans le paramètre `query` : donne tout le contexte nécessaire au sous-travailleur et précise où il doit sauvegarder son travail.
-4. N'hésite pas à utiliser le paramètre `directives` pour forcer le sous-travailleur à adopter un rôle très précis (ex: "Agis comme un développeur senior très strict").
+1. Si tu reçois une requête qui demande plusieurs étapes complexes, de l'exploration de code massive, ou des tâches pouvant être parallélisées, utilise `delegate_to_adaptive_worker` pour créer des sous-travailleurs.
+2. Formule la sous-requête de manière claire et auto-contenue pour le sous-travailleur.
+3. Si la tâche nécessite une rigueur particulière, utilise le paramètre `directives` pour imposer un persona au travailleur (ex: "Agis comme un expert sécurité", "Agis comme un architecte logiciel").
+4. Demande toujours au sous-travailleur d'enregistrer son travail dans un fichier, pour ne pas saturer ton propre contexte.
