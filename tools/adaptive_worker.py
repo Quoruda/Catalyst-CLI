@@ -2,7 +2,7 @@ import json
 from discovery import nesting_level, current_step_callback, available_agents
 
 schema = {
-    "name": "delegate_to_adaptive_worker",
+    "name": "spawn_adaptive_worker",
     "description": (
         "Delegates a complex or isolated sub-task to a fresh, adaptive sub-worker agent. "
         "The worker will dynamically route the request and select the optimal skills. "
@@ -25,7 +25,7 @@ schema = {
     }
 }
 
-def delegate_to_adaptive_worker(query: str, directives: str = "") -> str:
+def spawn_adaptive_worker(query: str, directives: str = "") -> str:
     """Delegates a task to the metamorph agent acting as an adaptive worker."""
     metamorph_agent = available_agents.get("metamorph")
     if not metamorph_agent:
