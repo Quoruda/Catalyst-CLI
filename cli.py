@@ -363,6 +363,8 @@ def main():
         "/help": [],
         "/agent": ["list", "switch"],
         "/tool": ["list"],
+        "/skills": [],
+        "/skill": ["list"],
         "/session": ["list", "resume", "new", "rename", "delete", "pop"],
         "/provider": ["list", "switch"]
     }
@@ -572,6 +574,28 @@ def main():
                     console.print("[yellow]Usage: /tool list[/yellow]")
                     continue
                     
+                if cmd in ("/skill", "/skills"):
+                    is_valid = False
+                    if cmd == "/skills":
+                        is_valid = True
+                    elif len(parts) >= 2 and parts[1].lower() == "list":
+                        is_valid = True
+                    
+                    if is_valid:
+                        from discovery import available_skills
+                        if not available_skills:
+                            console.print("[yellow]No skills registered.[/yellow]")
+                        else:
+                            console.print("[bold cyan]Registered Skills:[/bold cyan]")
+                            for name, skill in available_skills.items():
+                                desc = skill.description
+                                tools_str = ", ".join(skill.tools) if skill.tools else "no tools"
+                                console.print(f"[bold green]{name}[/bold green] - {desc} [dim]({tools_str})[/dim]")
+                        continue
+                    
+                    console.print("[yellow]Usage: /skill list or /skills[/yellow]")
+                    continue
+                    
                 if cmd == "/session":
                     if len(parts) >= 2:
                         subcmd = parts[1].lower()
@@ -716,6 +740,7 @@ def main():
                         "[bold]/agent list[/bold] - Show registered agents\n"
                         "[bold]/agent switch <name>[/bold] - Switch to a different agent\n"
                         "[bold]/tool list[/bold] - Show registered tools\n"
+                        "[bold]/skill list[/bold] (or [bold]/skills[/bold]) - Show registered skills\n"
                         "[bold]/session list[/bold] - List all saved sessions\n"
                         "[bold]/session new[/bold] - Start a new blank session\n"
                         "[bold]/session resume <id>[/bold] - Resume a previous session\n"
