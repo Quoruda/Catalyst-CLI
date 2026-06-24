@@ -3,12 +3,12 @@ from typing import Dict, Any, List, Optional, Callable
 from agent import BaseAgent
 
 
-class MetamorphAgent(BaseAgent):
+class SupervisorAgent(BaseAgent):
     def __init__(self):
         super().__init__(
-            name="metamorph",
+            name="supervisor",
             description="Adaptive agent that dynamically selects skills and engine based on each user request.",
-            delegation_instruction="Provide a clear task description. The metamorph agent will autonomously select the appropriate skills and tools."
+            delegation_instruction="Provide a clear task description. The supervisor agent will autonomously select the appropriate skills and tools."
         )
         self._active_skills = []
         self._active_tool_names = []
@@ -121,8 +121,8 @@ class MetamorphAgent(BaseAgent):
 
             # Fabricate a temporary agent config with the resolved context
             agent_config = Agent(
-                name="metamorph_worker",
-                description="Dynamic worker spawned by the metamorph agent.",
+                name="worker",
+                description="Dynamic worker spawned by the supervisor agent.",
                 engine=engine_name,
                 tools=self._active_tool_names,
                 system_prompt=self._active_directives,
@@ -139,9 +139,9 @@ class MetamorphAgent(BaseAgent):
             return result
 
         except Exception as e:
-            self.log_error(f"Metamorph failed: {e}")
+            self.log_error(f"Supervisor failed: {e}")
             if step_callback:
                 step_callback("agent_done", self.name, "")
-            return f"Metamorph failed: {e}"
+            return f"Supervisor failed: {e}"
         finally:
             active_agent_name.reset(token_agent)
