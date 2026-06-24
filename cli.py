@@ -292,7 +292,7 @@ def main():
     elif saved_agent and saved_agent in available_agents:
         current_agent_name = saved_agent
     else:
-        current_agent_name = "catalyst" if "catalyst" in available_agents else list(available_agents.keys())[0]
+        current_agent_name = "metamorph" if "metamorph" in available_agents else list(available_agents.keys())[0]
     
     try:
         react_agent = available_agents[current_agent_name]
