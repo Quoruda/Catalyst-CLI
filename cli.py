@@ -264,7 +264,6 @@ def main():
 
     target_session_id = None
     loaded_history = []
-    session_agent = None
 
     if parsed_args.session:
         target_session_id = parsed_args.session
@@ -278,7 +277,6 @@ def main():
                 with open(path, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     loaded_history = data.get("history", [])
-                    session_agent = data.get("agent")
             except Exception:
                 pass
         else:
@@ -291,8 +289,6 @@ def main():
             console.print(Panel(f"[bold red]Error: Agent '{parsed_args.agent}' not found. Registered agents: {', '.join(available_agents.keys())}[/bold red]", title="Error"))
             sys.exit(1)
         current_agent_name = parsed_args.agent
-    elif session_agent and session_agent in available_agents:
-        current_agent_name = session_agent
     elif saved_agent and saved_agent in available_agents:
         current_agent_name = saved_agent
     else:
