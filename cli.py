@@ -177,6 +177,9 @@ def main():
     parser = argparse.ArgumentParser(description="Catalyst CLI")
     parser.add_argument("-m", "--message", type=str, help="Quickly send a message and get a response without entering interactive mode.")
     parser.add_argument("-a", "--agent", type=str, help="Specify the agent to use.")
+    parser.add_argument("--sessions", action="store_true", help="List all saved sessions and exit.")
+    parser.add_argument("--agents", action="store_true", help="List all registered agents and exit.")
+    parser.add_argument("--tools", action="store_true", help="List all registered tools and exit.")
     parsed_args = parser.parse_args()
 
     console = Console()
@@ -218,6 +221,45 @@ def main():
     active_provider = user_config.get("active_provider")
     if active_provider:
         apply_provider(active_provider)
+
+    if parsed_args.sessions:
+        sessions = list_sessions()
+        if not sessions:
+            console.print("[yellow]No saved sessions.[/yellow]")
+        else:
+            console.print("[bold cyan]Saved Sessions:[/bold cyan]")
+            current_id = user_config.get("current_session_id", "")
+            for s in sessions:
+                active_mark = "*" if s["id"] == current_id else " "
+                console.print(f"{active_mark} [bold green]{s['id']}[/bold green] - [yellow]{s['title']}[/yellow] (Agent: {s.get('agent', 'unknown')})")
+        sys.exit(0)
+
+    if parsed_args.agents:
+        if not available_agents:
+            console.print("[yellow]No agents registered.[/yellow]")
+        else:
+            console.print("[bold cyan]Registered Agents:[/bold cyan]")
+            for name, agent_obj in available_agents.items():
+                engine = agent_obj.engine
+                desc = agent_obj.description
+                tools_list = ", ".join(agent_obj.tools)
+                console.print(f"[bold green]{name}[/bold green] (Engine: {engine}) - {desc}")
+                if tools_list:
+                    console.print(f"  [dim]Tools:[/] {tools_list}")
+                else:
+                    console.print("  [dim]Tools:[/] None")
+        sys.exit(0)
+
+    if parsed_args.tools:
+        from tools import tools_schema
+        if not tools_schema:
+            console.print("[yellow]No tools registered.[/yellow]")
+        else:
+            console.print("[bold cyan]Registered Tools:[/bold cyan]")
+            for schema in tools_schema:
+                desc = schema.get("description", "No description provided.")
+                console.print(f"[bold green]{schema['name']}[/bold green] - {desc}")
+        sys.exit(0)
 
     saved_agent = user_config.get("default_agent")
     if parsed_args.agent:

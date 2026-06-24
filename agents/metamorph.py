@@ -59,8 +59,16 @@ class MetamorphAgent(BaseAgent):
                 temperature=0.0,
                 response_format={"type": "json_object"}
             )
+            raw = raw.strip()
+            if raw.startswith("```json"):
+                raw = raw[7:]
+            elif raw.startswith("```"):
+                raw = raw[3:]
+            if raw.endswith("```"):
+                raw = raw[:-3]
+            raw = raw.strip()
             data = json.loads(raw)
-        except (json.JSONDecodeError, TypeError):
+        except (json.JSONDecodeError, TypeError, ValueError):
             return {"engine": "react", "skills": list(available_skills.keys())}
 
         # Validate engine against registry
