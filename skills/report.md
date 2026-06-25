@@ -1,6 +1,6 @@
 ---
-name: report_and_diagrams
-description: "Rédaction et structuration de rapports ou documentations enrichis de diagrammes explicatifs (Mermaid, Markdown, PDF, HTML)."
+name: report
+description: "Rédaction, structuration de rapports ou documentations (Mermaid, Markdown, PDF, HTML) et génération de diagrammes illustratifs."
 tools:
   - write_file
   - append_file
