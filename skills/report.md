@@ -1,13 +1,13 @@
 ---
 name: report
-description: "Rédaction, structuration de rapports ou documentations (Mermaid, Markdown, PDF, HTML) et génération de diagrammes illustratifs."
+description: "Drafting and structuring reports or documentation (Mermaid, Markdown, PDF, HTML) and generating illustrative diagrams."
 tools:
   - write_file
   - append_file
   - compile_report
   - generate_diagram
 ---
-1. **Écriture progressive** : Rédige toujours les documents longs de manière incrémentale en sections successives avec `append_file` pour éviter d'atteindre les limites de taille de réponse.
-2. **Illustration par diagrammes** : Utilise `generate_diagram` pour illustrer des flux, des architectures ou des séquences avec des diagrammes Mermaid (graph, sequenceDiagram, classDiagram) rendus localement en PNG.
-3. **Qualité des diagrammes** : Vérifie bien la syntaxe Mermaid avant de la soumettre. Privilégie la clarté et la simplicité sur les diagrammes trop chargés.
-4. **Charte et structure** : Adopte un ton sobre et professionnel. Si tu modifies un document existant, respecte scrupuleusement sa structure et son style.
+1. **Incremental Writing**: Always write long documents progressively in successive sections using `append_file` to avoid response length limits.
+2. **Illustration via Diagrams**: Use `generate_diagram` to illustrate flows, architectures, or sequences with Mermaid diagrams (graph, sequenceDiagram, classDiagram) rendered locally to PNG.
+3. **Diagram Quality**: Verify Mermaid syntax validity before submitting. Prioritize clarity and simplicity over cluttered diagrams.
+4. **Structure and Style**: Adopt a professional, sober tone. If modifying an existing document, strictly respect its structure and style.

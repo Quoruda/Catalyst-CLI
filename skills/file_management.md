@@ -1,12 +1,12 @@
 ---
 name: file_management
-description: "Lecture, écriture et modification de fichiers sur le système local."
+description: "Reading, writing, and modifying files on the local filesystem."
 tools:
   - read_file
   - write_file
   - append_file
   - patch_file
 ---
-1. Utilise `read_file` pour lire des fichiers, jamais `cat` via le terminal.
-2. Pour les documents volumineux (>200 lignes), écris de manière incrémentale avec `append_file` pour éviter les troncatures JSON.
-3. Vérifie toujours qu'un fichier existe avant d'écrire dessus pour ne pas écraser du contenu existant par erreur.
+1. Use `read_file` to read files, never use `cat` in the terminal.
+2. For large documents (>200 lines), write incrementally using `append_file` to avoid response truncation.
+3. Always verify if a file exists before writing to it to avoid accidentally overwriting existing content.

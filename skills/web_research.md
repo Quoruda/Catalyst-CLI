@@ -1,10 +1,10 @@
 ---
 name: web_research
-description: "Recherche d'informations sur internet et lecture de pages web."
+description: "Searching for information on the internet and reading web pages."
 tools:
   - web_search
   - read_webpage
 ---
-1. Formule des requêtes de recherche simples et ciblées, sans opérateurs booléens complexes.
-2. Limite la lecture des pages web aux sections pertinentes pour éviter de saturer le contexte.
-3. Cite toujours les sources (URLs) dans tes réponses.
+1. Formulate simple and targeted search queries without complex boolean operators.
+2. Limit reading web pages to relevant sections to avoid saturating your context window.
+3. Always cite sources (URLs) in your responses.

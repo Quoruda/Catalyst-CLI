@@ -1,12 +1,12 @@
 ---
 name: project_discovery
-description: "Découverte, analyse structurelle d'un codebase, lecture des consignes locales (AGENT.md, README.md) et inspection de l'état Git."
+description: "Discovery and structural analysis of a codebase, reading local instructions (AGENT.md, README.md), and checking Git status."
 tools:
   - generate_context_map
   - read_file
   - execute_bash
 ---
-1. **Cartographie du projet** : Si tu commences sur un projet ou si on te demande d'analyser son architecture, utilise en premier lieu `generate_context_map` pour en comprendre l'arborescence globale.
-2. **Recherche de règles et documentations** : Recherche activement à la racine des fichiers comme `AGENT.md`, `README.md`, `CONTRIBUTING.md` ou la configuration (`package.json`, `pyproject.toml`, etc.). Lis-les avec `read_file` pour assimiler les consignes, conventions de style et technologies requises.
-3. **Statut Git** : Utilise `execute_bash` pour exécuter `git status` et `git log -n 5` afin de comprendre l'état de la copie de travail, la branche active et les derniers changements.
-4. **Validation avant action** : Assure-toi d'avoir une bonne vision d'ensemble de la structure et des règles locales avant d'effectuer la moindre modification de code.
+1. **Project Mapping**: When onboarding on a project or asked to analyze its architecture, use `generate_context_map` first to understand the global file structure.
+2. **Guidelines and Documentation Search**: Actively look at the root for files like `AGENT.md`, `README.md`, `CONTRIBUTING.md`, or configurations (`package.json`, `pyproject.toml`, etc.). Read them using `read_file` to understand instructions, style conventions, and required technologies.
+3. **Git Status**: Use `execute_bash` to run `git status` and `git log -n 5` to understand the working directory state, active branch, and recent changes.
+4. **Validation Before Action**: Ensure you have a clear overview of the structure and local rules before making any code modifications.

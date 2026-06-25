@@ -1,10 +1,10 @@
 ---
 name: clipboard
-description: "Interactions avec le presse-papier du système (lecture de données copiées ou écriture de texte)."
+description: "Interactions with the system clipboard (reading copied data or writing text)."
 tools:
   - read_clipboard
   - write_clipboard
 ---
-1. **Lecture** : Utilise `read_clipboard` si l'utilisateur te demande d'analyser ou d'utiliser le contenu qu'il vient de copier (du texte ou du code).
-2. **Gestion des images** : Si le presse-papier contient une image, `read_clipboard` la sauvegardera dans un fichier temporaire. Utilise ensuite `view_image` sur ce fichier pour l'analyser.
-3. **Écriture** : Utilise `write_clipboard` pour copier du code généré, des commandes ou des résumés directement dans le presse-papier de l'utilisateur pour lui faire gagner du temps.
+1. **Reading**: Use `read_clipboard` if the user asks you to analyze or use the content they just copied (text or code).
+2. **Handling Images**: If the clipboard contains an image, `read_clipboard` will automatically save it to a temporary file. Then use `view_image` on this file path to analyze it.
+3. **Writing**: Use `write_clipboard` to copy generated code, commands, or summaries directly to the user's clipboard to save them time.
