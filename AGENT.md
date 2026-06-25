@@ -10,7 +10,7 @@ Catalyst-CLI is designed to operate locally on the user's machine with maximum c
 
 ## 2. Core Architecture
 Catalyst-CLI is a multi-agent orchestration framework running locally on the user's machine. 
-- **`cli.py`**: The entry point. Handles the interactive shell (prompt-toolkit), slash commands (e.g., `/session pop`), and session state persistence in `~/.catalyst/`.
+- **`cli.py`**: The entry point. Handles the interactive shell (prompt-toolkit), slash commands (e.g., `/history pop`), and session state persistence in `~/.catalyst/`.
 - **`discovery.py`**: The auto-discovery engine. It automatically loads Tools, Engines, Agents, and Skills from their respective folders by inspecting exports, imports, and markdown schemas.
 - **`providers.py`**: The LLM abstraction layer using `litellm`. It supports dynamic provider switching.
 

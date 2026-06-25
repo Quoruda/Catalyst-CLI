@@ -364,13 +364,13 @@ def main():
         "/exit": [],
         "/quit": [],
         "/clear": [],
-        "/history": [],
+        "/history": ["pop"],
         "/help": [],
         "/agent": ["list", "switch"],
         "/tool": ["list"],
         "/skills": [],
         "/skill": ["list"],
-        "/session": ["list", "resume", "new", "rename", "delete", "pop"],
+        "/session": ["list", "resume", "new", "rename", "delete"],
         "/provider": ["list", "switch"]
     }
     completer = SlashCommandCompleter(command_tree)
@@ -482,14 +482,52 @@ def main():
                     continue
                     
                 if cmd == "/history":
-                    if not history:
-                        console.print("[yellow]History is empty.[/yellow]")
+                    if len(parts) >= 2 and parts[1].lower() == "pop":
+                        if not history:
+                            console.print("[yellow]History is already empty.[/yellow]")
+                            continue
+                            
+                        arg = parts[2].strip() if len(parts) >= 3 else "1"
+                        
+                        if arg == "*":
+                            history.clear()
+                            save_session(current_session_id, history, current_agent_name)
+                            console.print("[yellow]Conversation history cleared for this session.[/yellow]")
+                            continue
+                            
+                        try:
+                            num_interactions = int(arg)
+                            if num_interactions <= 0:
+                                raise ValueError()
+                        except ValueError:
+                            console.print("[red]Usage: /history pop [<number> | *][/red]")
+                            continue
+                            
+                        total_removed = 0
+                        actual_popped_interactions = 0
+                        for _ in range(num_interactions):
+                            if not history:
+                                break
+                            last_role = history[-1].get("role")
+                            history.pop()
+                            total_removed += 1
+                            if last_role == "assistant" and len(history) > 0 and history[-1].get("role") == "user":
+                                history.pop()
+                                total_removed += 1
+                            actual_popped_interactions += 1
+                                
+                        save_session(current_session_id, history, current_agent_name)
+                        console.print(f"[green]Removed the last {actual_popped_interactions} interaction(s) ({total_removed} messages) from history.[/green]")
+                        continue
                     else:
-                        for msg in history:
-                            role = msg["role"].upper()
-                            color = "green" if role == "USER" else "yellow" if role == "SYSTEM" else "cyan"
-                            console.print(f"[{color}][bold]{role}:[/bold] {msg['content']}[/{color}]")
-                    continue
+                        if not history:
+                            console.print("[yellow]History is empty.[/yellow]")
+                        else:
+                            for msg in history:
+                                role = msg["role"].upper()
+                                color = "green" if role == "USER" else "yellow" if role == "SYSTEM" else "cyan"
+                                console.print(f"[{color}][bold]{role}:[/bold] {msg['content']}[/{color}]")
+                        continue
                     
                 if cmd == "/agent":
                     if len(parts) >= 2:
@@ -698,45 +736,7 @@ def main():
                                 console.print(f"[red]Session '{target_id}' not found.[/red]")
                             continue
                             
-                        elif subcmd == "pop":
-                            if not history:
-                                console.print("[yellow]History is already empty.[/yellow]")
-                                continue
-                                
-                            arg = parts[2].strip() if len(parts) >= 3 else "1"
-                            
-                            if arg == "*":
-                                history.clear()
-                                save_session(current_session_id, history, current_agent_name)
-                                console.print("[yellow]Conversation history cleared for this session.[/yellow]")
-                                continue
-                                
-                            try:
-                                num_interactions = int(arg)
-                                if num_interactions <= 0:
-                                    raise ValueError()
-                            except ValueError:
-                                console.print("[red]Usage: /session pop [<number> | *][/red]")
-                                continue
-                                
-                            total_removed = 0
-                            actual_popped_interactions = 0
-                            for _ in range(num_interactions):
-                                if not history:
-                                    break
-                                last_role = history[-1].get("role")
-                                history.pop()
-                                total_removed += 1
-                                if last_role == "assistant" and len(history) > 0 and history[-1].get("role") == "user":
-                                    history.pop()
-                                    total_removed += 1
-                                actual_popped_interactions += 1
-                                    
-                            save_session(current_session_id, history, current_agent_name)
-                            console.print(f"[green]Removed the last {actual_popped_interactions} interaction(s) ({total_removed} messages) from history.[/green]")
-                            continue
-                            
-                    console.print("[yellow]Usage: /session list | /session new | /session resume <id> | /session rename <name> | /session delete <id> | /session pop [<number> | *][/yellow]")
+                    console.print("[yellow]Usage: /session list | /session new | /session resume <id> | /session rename <name> | /session delete <id>[/yellow]")
                     continue
 
                 if cmd == "/help":
@@ -752,10 +752,10 @@ def main():
                         "[bold]/session resume <id>[/bold] - Resume a previous session\n"
                         "[bold]/session rename <name>[/bold] - Rename the current session\n"
                         "[bold]/session delete <id>[/bold] - Delete a session\n"
-                        "[bold]/session pop [<number> | *][/bold] - Remove last N interactions (or '*' to clear all)\n"
                         "[bold]/provider list[/bold] - List available LLM providers\n"
                         "[bold]/provider switch <name>[/bold] - Switch active LLM provider\n"
                         "[bold]/history[/bold] - View current raw conversation history\n"
+                        "[bold]/history pop [<number> | *][/bold] - Remove last N interactions (or '*' to clear all)\n"
                         "[bold]/clear[/bold] - Clear the terminal screen\n"
                         "[bold]/exit[/bold] - Exit Catalyst",
                         title="Help",
