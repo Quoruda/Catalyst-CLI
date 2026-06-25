@@ -364,7 +364,7 @@ def main():
         "/exit": [],
         "/quit": [],
         "/clear": [],
-        "/history": ["pop"],
+        "/history": ["pop", "retry"],
         "/help": [],
         "/agent": ["list", "switch"],
         "/tool": ["list"],
@@ -518,6 +518,39 @@ def main():
                                 
                         save_session(current_session_id, history, current_agent_name)
                         console.print(f"[green]Removed the last {actual_popped_interactions} interaction(s) ({total_removed} messages) from history.[/green]")
+                        continue
+                    elif len(parts) >= 2 and parts[1].lower() == "retry":
+                        if not history:
+                            console.print("[yellow]History is empty, nothing to retry.[/yellow]")
+                            continue
+                            
+                        if history[-1].get("role") == "assistant":
+                            history.pop()
+                            
+                        if not history or history[-1].get("role") != "user":
+                            console.print("[red]Could not find a previous user message to retry.[/red]")
+                            continue
+                            
+                        last_user_msg = history[-1].get("content")
+                        history.pop()
+                        
+                        user_input = last_user_msg
+                        console.print(f"\n[cyan]Retrying:[/cyan] {user_input}\n")
+                        
+                        try:
+                            is_generating = True
+                            response = react_agent.run(user_input, history, step_callback=step_callback)
+                            save_session(current_session_id, history, current_agent_name)
+                            console.print(Panel(Markdown(response), title="[bold green]Final Answer[/bold green]", border_style="green"))
+                            console.print()
+                        except Exception as e:
+                            from rich.markup import escape
+                            console.print(Panel(f"[bold red]Error: {escape(str(e))}[/bold red]", border_style="red"))
+                        finally:
+                            is_generating = False
+                            if active_status:
+                                active_status.stop()
+                                active_status = None
                         continue
                     else:
                         if not history:
@@ -756,6 +789,7 @@ def main():
                         "[bold]/provider switch <name>[/bold] - Switch active LLM provider\n"
                         "[bold]/history[/bold] - View current raw conversation history\n"
                         "[bold]/history pop [<number> | *][/bold] - Remove last N interactions (or '*' to clear all)\n"
+                        "[bold]/history retry[/bold] - Pop the last response and resubmit the last user prompt\n"
                         "[bold]/clear[/bold] - Clear the terminal screen\n"
                         "[bold]/exit[/bold] - Exit Catalyst",
                         title="Help",

@@ -108,5 +108,6 @@ Inside the CLI, you can query the agent or run commands:
 - `/provider switch <name>`: Switch active LLM provider.
 - `/history`: Review the raw message exchanges.
 - `/history pop [<number> | *]`: Remove last N interactions (or '*' to clear all history) from the current session.
+- `/history retry`: Pop the last response and immediately resubmit the last user prompt.
 - `/clear`: Clear the active session history.
 - `/exit`: Terminate the session.
