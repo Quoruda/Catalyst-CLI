@@ -1,6 +1,6 @@
 ---
 name: media_analysis
-description: "Reading, analyzing, and extracting information from complex documents (PDFs, images, diagrams, large files)."
+description: "Reading, analyzing, and extracting information from complex technical documents (PDFs, images, diagrams, large log files). Do NOT use this for creative writing, literary critique, or story analysis."
 tools:
   - read_pdf
   - ask_document

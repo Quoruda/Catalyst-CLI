@@ -1,6 +1,6 @@
 ---
 name: creative_writing
-description: "Expert at professional fiction and non-fiction creative writing. Use this when the user needs to write, draft, or heavily edit stories, chapters, character bibles, or narrative text."
+description: "Expert at professional fiction and non-fiction creative writing. Use this when the user needs to write, draft, heavily edit, review, critique, or analyze stories, books, chapters, character bibles, or narrative text."
 tools:
   - write_file
   - append_file
