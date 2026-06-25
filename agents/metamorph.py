@@ -150,6 +150,7 @@ class MetamorphAgent(BaseAgent):
                     step_callback("route", self.name, f"execution_temperature={exec_temp}")
                 worker = engine_class(agent_config)
                 result = worker.run(query, history=history, step_callback=inner_step_callback)
+                self.last_context_size = getattr(worker, "last_context_size", 0)
             finally:
                 active_config.temperature = original_temp
 
