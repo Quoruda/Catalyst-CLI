@@ -6,13 +6,15 @@ The agent's backend is powered by LiteLLM, offering compatibility across multipl
 
 ## Features
 
-- Interactive Shell: Built with prompt-toolkit supporting line editing, arrow-key history traversal, custom auto-completions, and a live information toolbar.
-- Slash Commands: Dedicated commands for session control including /help, /clear, /history, and /exit. Unknown slash commands are intercepted to prevent accidental LLM execution.
-- Clean Execution Timeline: Real-time logging of the agent's reasoning loop using a vertical line connector. Shows active spinners during generation and permanent logs for completed steps without terminal clutter.
-- Extensible Toolset:
-  - System Shell Execution: execute_bash for running local terminal commands.
-  - Document Reading: read_pdf powered by pymupdf4llm, with native context silencers preventing Tesseract OCR diagnostics from polluting stdout/stderr.
-  - Image Analysis: view_image for visual understanding of local files (PNG, JPG, WEBP, GIF) via multimodal models.
+- **Interactive Shell**: Built with prompt-toolkit supporting line editing, arrow-key history traversal, custom auto-completions, and a live information toolbar.
+- **Slash Commands**: Dedicated commands for session control including `/help`, `/clear`, `/history`, and `/exit`. Unknown slash commands are intercepted to prevent accidental LLM execution.
+- **Clean Execution Timeline**: Real-time logging of the agent's reasoning loop using a vertical line connector. Shows active spinners during generation and permanent logs for completed steps without terminal clutter.
+- **Dynamic Skills Routing**: Powered by `metamorph`, a router agent that dynamically classifies user intent on every turn to load only the required **Skills** and execution engine (ReAct or Plan-Execute), minimizing context overhead.
+- **File-First Persistence & Path Delegation**: System-wide optimization that forces agents to write long outputs directly to files rather than flooding the chat, and delegates reviews/audits by passing paths instead of raw content.
+- **Extensible Toolset**:
+  - **System Shell Execution**: `execute_bash` for running local terminal commands.
+  - **Document Reading**: `read_pdf` powered by pymupdf4llm, with native context silencers preventing Tesseract OCR diagnostics from polluting stdout/stderr.
+  - **Image Analysis**: `view_image` for visual understanding of local files (PNG, JPG, WEBP, GIF) via multimodal models.
 
 ## Requirements
 

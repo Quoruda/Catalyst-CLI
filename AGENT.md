@@ -11,15 +11,26 @@ Catalyst-CLI is designed to operate locally on the user's machine with maximum c
 ## 2. Core Architecture
 Catalyst-CLI is a multi-agent orchestration framework running locally on the user's machine. 
 - **`cli.py`**: The entry point. Handles the interactive shell (prompt-toolkit), slash commands (e.g., `/session pop`), and session state persistence in `~/.catalyst/`.
-- **`discovery.py`**: The auto-discovery engine. It automatically loads Tools, Engines, and Agents from their respective folders by inspecting exports and markdown schemas.
-- **`providers.py`**: The LLM abstraction layer using `litellm`. It supports dynamic provider switching (OpenAI, Gemini, Ollama/OpenWebUI).
+- **`discovery.py`**: The auto-discovery engine. It automatically loads Tools, Engines, Agents, and Skills from their respective folders by inspecting exports, imports, and markdown schemas.
+- **`providers.py`**: The LLM abstraction layer using `litellm`. It supports dynamic provider switching.
 
-## 3. Agent Ecosystem (`agents/`)
-Agents are defined purely in Markdown files with YAML front-matter.
-- **`catalyst.md`**: The orchestrator (ReAct engine). It acts strictly as an **Executive Manager**. Its sole purpose is to understand high-level objectives, delegate to specialized sub-agents, and coordinate results. It must never attempt to perform heavy file reading, writing, or analysis tasks itself.
-- **`executor.md`**: The workhorse (PlanExecute engine). Equipped with bash and file writing tools. Handles complex tasks step-by-step. Rule: Must use `write_file` or `append_file` to persist text/reports (no text in-memory only).
-- **`report_writer.md`**: Specialized document writer. Uses `append_file` to draft long documents incrementally to avoid JSON timeout limits on large context windows.
-- **`code_reviewer.md` & `git_expert.md`**: Specialized analytical and version-control delegates.
+## 3. Dynamic Agent & Skills Ecosystem
+Instead of static specialized agents, Catalyst-CLI uses a dynamic, skill-routed execution model:
+
+### 3.1. Agents (`agents/`)
+- **`metamorph.py`**: The default dynamic agent. It operates in two phases:
+  1. **Routing**: Uses a lightweight LLM call to classify user intent, selecting the best execution engine and up to 4 relevant **Skills**.
+  2. **Execution**: Spawns a worker using the selected engine, injected with only the tools and Markdown guidelines defined by the resolved skills.
+- **`supervisor.py`**: Interactive coordinator.
+- **`deep_research.py`**: Advanced research loop.
+
+### 3.2. Skills (`skills/`)
+Skills are defined in Markdown files with YAML front-matter registering their names, descriptions, and required tools. Their markdown content acts as dynamic system prompt directives:
+- **`creative_writing.md`**: Implements advanced writing & critical editing guidelines (Show, Don't Tell, POV consistency, Dialogue Subtext, minimizing psychic distance).
+- **`report.md`**: Directs technical writing structure (Executive Summaries, scannability, tables, Mermaid diagrams).
+- **`file_management.md`**: Controls reading/writing to disk and enforces "File-First" output.
+- **`delegation.md`**: Manages spawning adaptive sub-workers and path-based delegation.
+- **`system.md`**, `web_research.md`, `media_analysis.md`, `clipboard.md`: System tool mappings.
 
 ## 4. Engines (`engines/`)
 - **ReAct (`react.py`)**: Loop of Thought -> Action -> Observation. Max limit is 25 steps to prevent infinite loops. Ideal for dynamic, conversational routing.
@@ -34,7 +45,13 @@ Tools are standard Python functions. To register a new tool:
 - **`generate_diagram.py`**: Generates PNG diagrams locally using `mmdc` (mermaid-cli).
 - **`ask_document.py`**: Utilizes local parsing/summarizing for PDF documents.
 
-## 6. Coding Conventions & Safety for AI Agents
+## 6. File-First Philosophy & Ephemeral Sessions
+To optimize token usage, minimize context bloat, and improve reliability:
+- **Ephemeral Sessions**: Single-shot commands (`python cli.py -m "query"`) are ephemeral by default. They do not write history files to disk or lock session files unless resumed via `-s <session_id>`.
+- **File-First Writing**: Agents must write drafts and reports directly to disk (using `write_file`/`append_file`) rather than printing large texts in conversational replies.
+- **Path-Based Delegation**: When spawning sub-workers (via `spawn_adaptive_worker`) for reviewing or auditing, the parent agent must pass only the file path, instructing the sub-worker to read the file itself rather than copy-pasting the content.
+
+## 7. Coding Conventions & Safety for AI Agents
 When working on this codebase or acting as an agent within this system, you must strictly follow these rules:
 - **No Placeholders**: Write fully functional, production-ready code. Never use `pass`, `// TODO`, or `...` points of ellipsis.
 - **Double-Verification (Anti-Hallucination)**: 
