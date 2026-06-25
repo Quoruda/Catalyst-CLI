@@ -339,18 +339,23 @@ def main():
 
     def get_toolbar_text():
         cwd = os.getcwd()
-        history_count = len(history) // 2
+        history_count = sum(1 for msg in history if msg.get("role") == "user")
         from metrics import global_metrics
         ctx_size = getattr(react_agent, "last_context_size", 0)
         formatted_ctx = format_tokens(ctx_size)
         formatted_total = format_tokens(global_metrics.total_tokens)
         cost_str = f" (${global_metrics.total_cost:.4f})" if global_metrics.total_cost > 0 else ""
+        
+        # Shorten model name to prevent UI overflow
+        model_name = react_agent.catalyst_agent.config.model
+        short_model = model_name.split('/')[-1] if '/' in model_name else model_name
+        
         return [
             ("class:toolbar-label", f" Catalyst (Agent: {current_agent_name}) | "),
             ("class:toolbar-value", f"ID: {current_session_id} | "),
             ("class:toolbar-value", f"Ctx: {formatted_ctx}t | "),
             ("class:toolbar-value", f"Session: {formatted_total}t{cost_str} | "),
-            ("class:toolbar-value", f"Model: {react_agent.catalyst_agent.config.model} | "),
+            ("class:toolbar-value", f"Model: {short_model} | "),
             ("class:toolbar-value", f"Turns: {history_count}"),
         ]
         
@@ -726,7 +731,8 @@ def main():
                                 history.extend(loaded_history)
                                 user_config["current_session_id"] = current_session_id
                                 save_user_config(user_config)
-                                console.print(Panel(f"[bold green]Resumed session: {target_id}[/bold green]\n[dim]Turns: {len(history)//2}[/dim]", border_style="green"))
+                                turns_count = sum(1 for m in history if m.get("role") == "user")
+                                console.print(Panel(f"[bold green]Resumed session: {target_id}[/bold green]\n[dim]Turns: {turns_count}[/dim]", border_style="green"))
                             else:
                                 session_locker.unlock()
                                 console.print(f"[red]Session '{target_id}' not found.[/red]")
