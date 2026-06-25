@@ -373,7 +373,6 @@ def main():
         "/help": [],
         "/agent": ["list", "switch"],
         "/tool": ["list"],
-        "/skills": [],
         "/skill": ["list"],
         "/session": ["list", "resume", "new", "rename", "delete"],
         "/provider": ["list", "switch"]
@@ -670,11 +669,9 @@ def main():
                     console.print("[yellow]Usage: /tool list[/yellow]")
                     continue
                     
-                if cmd in ("/skill", "/skills"):
+                if cmd == "/skill":
                     is_valid = False
-                    if cmd == "/skills":
-                        is_valid = True
-                    elif len(parts) >= 2 and parts[1].lower() == "list":
+                    if len(parts) >= 2 and parts[1].lower() == "list":
                         is_valid = True
                     
                     if is_valid:
@@ -689,7 +686,7 @@ def main():
                                 console.print(f"[bold green]{name}[/bold green] - {desc} [dim]({tools_str})[/dim]")
                         continue
                     
-                    console.print("[yellow]Usage: /skill list or /skills[/yellow]")
+                    console.print("[yellow]Usage: /skill list[/yellow]")
                     continue
                     
                 if cmd == "/session":
@@ -799,7 +796,7 @@ def main():
                         "[bold]/agent list[/bold] - Show registered agents\n"
                         "[bold]/agent switch <name>[/bold] - Switch to a different agent\n"
                         "[bold]/tool list[/bold] - Show registered tools\n"
-                        "[bold]/skill list[/bold] (or [bold]/skills[/bold]) - Show registered skills\n"
+                        "[bold]/skill list[/bold] - Show registered skills\n"
                         "[bold]/session list[/bold] - List all saved sessions\n"
                         "[bold]/session new[/bold] - Start a new blank session\n"
                         "[bold]/session resume <id>[/bold] - Resume a previous session\n"
