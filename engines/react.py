@@ -56,7 +56,8 @@ class Engine(BaseAgent):
                 
                 
             history.append({"role": "user", "content": query})
-            messages = list(history)
+            # Token economy disabled: we now store all tool calls and responses directly in the session history.
+            messages = history
             
             max_steps = 25
             for _ in range(max_steps):
