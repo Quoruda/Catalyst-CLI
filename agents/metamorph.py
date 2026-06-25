@@ -13,6 +13,7 @@ class MetamorphAgent(BaseAgent):
         self._active_skills = []
         self._active_tool_names = []
         self._active_directives = ""
+        self._active_temperature = None
 
     @property
     def active_skills(self) -> list:
@@ -25,7 +26,7 @@ class MetamorphAgent(BaseAgent):
     def load_skills(self, skill_names: list[str]):
         from discovery import resolve_skills
         self._active_skills = list(skill_names)
-        self._active_tool_names, self._active_directives = resolve_skills(skill_names)
+        self._active_tool_names, self._active_directives, self._active_temperature = resolve_skills(skill_names)
 
     def get_active_tools_schema(self) -> list[dict]:
         from discovery import tools_schema
@@ -121,6 +122,9 @@ class MetamorphAgent(BaseAgent):
             if not engine_class:
                 engine_class = available_engines.get("react")
 
+            # Determine execution temperature (0.5 default if not specified)
+            exec_temp = self._active_temperature if self._active_temperature is not None else 0.5
+
             # Fabricate a temporary agent config with the resolved context
             agent_config = Agent(
                 name="metamorph",
@@ -138,8 +142,16 @@ class MetamorphAgent(BaseAgent):
                 if step_callback:
                     step_callback(s_type, s_name, s_detail)
 
-            worker = engine_class(agent_config)
-            result = worker.run(query, history=history, step_callback=inner_step_callback)
+            from config import active_config
+            original_temp = active_config.temperature
+            try:
+                active_config.temperature = exec_temp
+                if step_callback:
+                    step_callback("route", self.name, f"execution_temperature={exec_temp}")
+                worker = engine_class(agent_config)
+                result = worker.run(query, history=history, step_callback=inner_step_callback)
+            finally:
+                active_config.temperature = original_temp
 
             if step_callback:
                 step_callback("agent_done", self.name, "")

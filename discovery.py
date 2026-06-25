@@ -4,11 +4,12 @@ import importlib.util
 import contextvars
 
 class Skill:
-    def __init__(self, name: str, description: str, tools: list[str], directives: str):
+    def __init__(self, name: str, description: str, tools: list[str], directives: str, temperature: float = None):
         self.name = name
         self.description = description
         self.tools = tools
         self.directives = directives
+        self.temperature = temperature
 
     def __repr__(self):
         return f"<Skill name={self.name} tools={self.tools}>"
@@ -315,18 +316,20 @@ def load_skills():
                     name=name,
                     description=config.get("description", "No description provided."),
                     tools=tools_list,
-                    directives=config.get("system_prompt", "")
+                    directives=config.get("system_prompt", ""),
+                    temperature=config.get("temperature")
                 )
                 available_skills[name] = skill
             except Exception as e:
                 if isinstance(e, ValueError):
                     raise e
 
-def resolve_skills(skill_names: list[str]) -> tuple[list[str], str]:
-    """Resolve a list of skill names into a flat list of tool names and combined directives text."""
+def resolve_skills(skill_names: list[str]) -> tuple[list[str], str, float]:
+    """Resolve a list of skill names into a flat list of tool names, combined directives text, and max temperature."""
     resolved_tools = []
     directives_parts = []
     seen_tools = set()
+    max_temp = None
     
     for skill_name in skill_names:
         skill = available_skills.get(skill_name)
@@ -338,9 +341,12 @@ def resolve_skills(skill_names: list[str]) -> tuple[list[str], str]:
                 seen_tools.add(tool_name)
         if skill.directives:
             directives_parts.append(f"## Skill: {skill.name}\n{skill.directives}")
+        if skill.temperature is not None:
+            if max_temp is None or skill.temperature > max_temp:
+                max_temp = float(skill.temperature)
             
     combined_directives = "\n\n".join(directives_parts)
-    return resolved_tools, combined_directives
+    return resolved_tools, combined_directives, max_temp
 
 load_tools()
 load_engines()
