@@ -9,3 +9,4 @@ tools:
 3. Formulate the sub-query in a clear and self-contained manner for the sub-worker.
 4. If the task requires specific rigor, use the `directives` parameter to enforce a persona on the worker (e.g., "Act as a security expert", "Act as a software architect").
 5. Always ask the sub-worker to write its findings to a file so as not to bloat your own context window.
+6. **Reference Paths, Don't Copy-Paste**: When delegating the review of a file, draft, or code to a sub-worker, do not copy-paste the content into the delegation prompt. Instead, provide the file path and instruct the worker to read it.
