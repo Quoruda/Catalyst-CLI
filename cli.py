@@ -559,7 +559,21 @@ def main():
                             for msg in history:
                                 role = msg["role"].upper()
                                 color = "green" if role == "USER" else "yellow" if role == "SYSTEM" else "cyan"
-                                console.print(f"[{color}][bold]{role}:[/bold] {msg['content']}[/{color}]")
+                                
+                                if "tool_calls" in msg and msg["tool_calls"]:
+                                    calls = [tc.get("function", {}).get("name", "unknown") for tc in msg["tool_calls"]]
+                                    console.print(f"[{color}][bold]{role} (Action):[/bold] Called tools: {calls}[/{color}]")
+                                    
+                                if role == "TOOL":
+                                    tool_name = msg.get("name", "unknown")
+                                    content = str(msg.get("content", ""))
+                                    if len(content) > 150:
+                                        content = content[:150] + "... [truncated for display]"
+                                    from rich.markup import escape
+                                    console.print(f"[magenta][bold]TOOL ({escape(tool_name)}):[/bold] {escape(content)}[/magenta]")
+                                elif msg.get("content"):
+                                    from rich.markup import escape
+                                    console.print(f"[{color}][bold]{role}:[/bold] {escape(str(msg['content']))}[/{color}]")
                         continue
                     
                 if cmd == "/agent":
