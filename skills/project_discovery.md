@@ -1,6 +1,6 @@
 ---
 name: project_discovery
-description: "Discovery and structural analysis of a codebase, reading local instructions (AGENT.md, README.md), and checking Git status."
+description: "Discovery and structural analysis of a SOFTWARE codebase, reading local instructions (AGENT.md, README.md), and checking Git status. Do NOT use this for literary projects, books, or story folders."
 tools:
   - generate_context_map
   - read_file
