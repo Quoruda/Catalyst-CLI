@@ -21,4 +21,5 @@ tools:
     *   *Self-Review*: Read the written file back to self-correct layout, flow, and formatting before completing the task.
 *   **When Reviewing / Editing**:
     *   *File-Path Review*: When asked to review or critique a report, read it directly from its file path rather than requesting the text to be pasted in the prompt.
+    *   *File-First Critique*: NEVER output your full detailed review in the conversational reply. Write your analysis to a file (e.g., `tmp_review.md`) and provide a very brief summary in the chat.
     *   *Quality Check*: Verify syntax formatting (Markdown, HTML, PDF compilation setups) and Mermaid diagram validity before compiling.
