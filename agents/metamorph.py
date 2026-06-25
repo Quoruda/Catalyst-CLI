@@ -46,7 +46,7 @@ class MetamorphAgent(BaseAgent):
         history_context = ""
         if history:
             history_context = "Recent conversation context:\n"
-            for msg in history[-20:]: # Include up to 20 messages for deep context
+            for msg in history[-6:]: # Include up to 6 messages for routing context to minimize latency
                 role = msg.get("role", "unknown")
                 if role == "system":
                     continue
