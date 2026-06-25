@@ -313,11 +313,16 @@ def main():
         console.print(f"[bold cyan]{ascii_art}[/bold cyan]")
         console.print("[dim]Interactive Supervisor Agent (ReAct Mode)[/dim]\n")
     
+    is_ephemeral_session = False
     if target_session_id:
         current_session_id = target_session_id
         history = loaded_history
         user_config["current_session_id"] = current_session_id
         save_user_config(user_config)
+    elif parsed_args.message:
+        is_ephemeral_session = True
+        current_session_id = "ephemeral"
+        history = []
     else:
         current_session_id = create_new_session()
         session_locker.lock(current_session_id)
@@ -436,7 +441,8 @@ def main():
         console.print()
         try:
             response = react_agent.run(parsed_args.message, history, step_callback=step_callback)
-            save_session(current_session_id, history, current_agent_name)
+            if not is_ephemeral_session:
+                save_session(current_session_id, history, current_agent_name)
             console.print(Panel(Markdown(response), title="[bold green]Final Answer[/bold green]", border_style="green"))
             console.print()
         except Exception as e:
