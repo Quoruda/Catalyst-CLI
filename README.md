@@ -69,6 +69,17 @@ Start the interactive CLI:
 python cli.py
 ```
 
+### CLI Command Line Arguments
+
+You can customize the execution by passing the following options:
+
+- `-m "<message>"` / `--message "<message>"`: Execute a single message and exit immediately. By default, this runs in an **ephemeral** session that is not saved to disk.
+- `-s <id>` / `--session <id>`: Target a specific session ID to resume. When combined with `-m`, it runs the query within that session and saves the updated history to disk.
+- `-a <agent>` / `--agent <agent>`: Start with a specific agent (e.g., `metamorph`, `supervisor`).
+- `--sessions`: List all saved sessions and exit.
+- `--agents`: List all registered agents and exit.
+- `--tools`: List all registered tools and exit.
+
 Inside the CLI, you can query the agent or run commands:
 ```
 >>> List the PDF files in this directory and summarize them.
