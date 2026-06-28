@@ -203,7 +203,12 @@ Respond ONLY with a JSON array of strings representing the updated remaining ste
             if iterations >= max_plan_iterations:
                 final_answer = "Stopped because the plan execution exceeded the maximum number of iterations."
             else:
-                final_answer = "Objective accomplished. Summary of steps:\n\n" + "\n\n".join(completed_steps_log)
+                summary_prompt = f"The objective '{query}' was completed in {iterations} steps. Here are the step results:\n\n" + "\n".join(completed_steps_log) + "\n\nProvide a very concise summary (2-3 sentences max) of what was accomplished to the user."
+                try:
+                    res = self.generate([{"role": "user", "content": summary_prompt}])
+                    final_answer = res.content.strip()
+                except Exception:
+                    final_answer = f"Objective accomplished successfully in {iterations} steps."
                 
             history.append({"role": "assistant", "content": final_answer})
             
