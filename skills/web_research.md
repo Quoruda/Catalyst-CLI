@@ -3,6 +3,7 @@ name: web_research
 description: "Searching for information on the internet and reading web pages."
 tools:
   - web_search
+  - image_search
   - read_webpage
 ---
 1. Formulate simple and targeted search queries without complex boolean operators.

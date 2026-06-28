@@ -32,7 +32,7 @@ class LiteLLMProvider(LLMProvider):
         
         provider = config.provider.lower() if config.provider else ""
         self.provider = provider
-        if provider and "/" not in config.model:
+        if provider and not config.model.startswith(f"{provider}/"):
             self.model = f"{provider}/{config.model}"
         else:
             self.model = config.model

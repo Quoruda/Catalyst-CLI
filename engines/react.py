@@ -98,6 +98,8 @@ class Engine(BaseAgent):
                         messages.append(tool_response_msg)
                 else:
                     final_answer = response.content or ""
+                    if not final_answer and getattr(response, "reasoning", None):
+                        final_answer = response.reasoning
                     history.append({"role": "assistant", "content": final_answer})
                     if step_callback:
                         step_callback("agent_done", self.name, "")
