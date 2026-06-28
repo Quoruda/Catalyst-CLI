@@ -1,5 +1,7 @@
 import os
 import sys
+import warnings
+warnings.simplefilter("ignore", ResourceWarning)
 from rich.console import Console
 from rich.panel import Panel
 from rich.markdown import Markdown
@@ -448,6 +450,9 @@ def main():
             if not is_ephemeral_session:
                 save_session(current_session_id, history, current_agent_name)
             console.print(Panel(Markdown(response), title="[bold green]Final Answer[/bold green]", border_style="green"))
+            console.print()
+            from metrics import global_metrics
+            console.print(f"[dim]Total Tokens: {global_metrics.total_tokens} (Prompt: {global_metrics.total_prompt_tokens}, Completion: {global_metrics.total_completion_tokens})[/dim]")
             console.print()
         except Exception as e:
             from rich.markup import escape
