@@ -6,7 +6,14 @@ def read_webpage(url: str) -> str:
         if downloaded is None:
             return f"Error: Unable to fetch URL content for {url}."
         content = trafilatura.extract(downloaded, output_format="markdown", include_images=True)
-        return content or "Error: No main text or content could be extracted from this webpage."
+        if not content:
+            return "Error: No main text or content could be extracted from this webpage."
+            
+        max_length = 25000
+        if len(content) > max_length:
+            content = content[:max_length] + "\n\n... [Content truncated due to length limits to protect context window]"
+            
+        return content
     except Exception as e:
         return f"Error reading webpage: {str(e)}"
 

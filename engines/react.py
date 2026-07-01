@@ -98,8 +98,12 @@ class Engine(BaseAgent):
                         messages.append(tool_response_msg)
                 else:
                     final_answer = response.content or ""
-                    if not final_answer and getattr(response, "reasoning", None):
+                    if not final_answer.strip() and getattr(response, "reasoning", None):
                         final_answer = response.reasoning
+                    
+                    if not final_answer.strip():
+                        final_answer = "⚠️ Erreur : Le modèle d'intelligence artificielle n'a renvoyé aucune réponse textuelle à cette étape. Il a peut-être atteint sa limite de contexte ou a crashé silencieusement après l'utilisation de l'outil."
+                    
                     history.append({"role": "assistant", "content": final_answer})
                     if step_callback:
                         step_callback("agent_done", self.name, "")
